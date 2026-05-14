@@ -1,0 +1,179 @@
+<div class="notif-page">
+  <div class="notif-shell">
+    <div class="notif-header">
+      <div>
+        <div class="notif-kicker">Inbox</div>
+        <h1>Notifications</h1>
+        <p>&ldquo;Stay close to what matters.&rdquo;</p>
+      </div>
+
+      <div class="header-actions">
+        <span class="unread-pill" *ngIf="unreadCount > 0">{{ unreadCount }} unread</span>
+        <button class="btn-settings" type="button" (click)="toggleSettingsPanel()">Settings</button>
+        <button class="btn-mark-all" type="button" (click)="markAllRead()">Mark all read</button>
+      </div>
+    </div>
+
+    <div class="settings-panel" *ngIf="showSettingsPanel">
+      <h3>Notification settings</h3>
+      <div class="settings-grid">
+        <label><input type="checkbox" [(ngModel)]="settings.likes" /> Likes</label>
+        <label><input type="checkbox" [(ngModel)]="settings.comments" /> Comments & replies</label>
+        <label><input type="checkbox" [(ngModel)]="settings.follows" /> Follows</label>
+        <label><input type="checkbox" [(ngModel)]="settings.mentions" /> Mentions & tags</label>
+        <label><input type="checkbox" [(ngModel)]="settings.stories" /> Stories</label>
+        <label><input type="checkbox" [(ngModel)]="settings.verifiedPremium" /> Verified / Premium</label>
+        <label><input type="checkbox" [(ngModel)]="settings.requests" /> Requests</label>
+        <label><input type="checkbox" [(ngModel)]="settings.system" /> System announcements</label>
+        <label><input type="checkbox" [(ngModel)]="settings.pushEnabled" /> Push notifications</label>
+        <label><input type="checkbox" [(ngModel)]="settings.emailEnabled" /> Email notifications</label>
+      </div>
+
+      <div class="muted-types" *ngIf="settings.mutedTypes.length > 0">
+        <span class="muted-title">Muted types:</span>
+        <button
+          class="mute-chip"
+          type="button"
+          *ngFor="let mutedType of settings.mutedTypes"
+          (click)="unmute(mutedType)"
+        >
+          {{ mutedType }} x
+        </button>
+      </div>
+
+      <div class="settings-actions">
+        <button class="btn-secondary" type="button" (click)="toggleSettingsPanel()">Cancel</button>
+        <button class="btn-save" type="button" [disabled]="settingsSaving" (click)="saveSettings()">
+          {{ settingsSaving ? 'Saving...' : 'Save settings' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-tabs">
+      <button
+        *ngFor="let filter of tabs"
+        type="button"
+        [class.active]="activeFilter === filter.key"
+        (click)="filterNotifications(filter.key)"
+      >
+        {{ filter.label }}
+      </button>
+    </div>
+
+    <div class="notif-feed" *ngIf="visibleNotifications.length > 0; else emptyState">
+      
+      <!-- New Section -->
+      <div class="notif-section" *ngIf="newNotifications.length > 0">
+        <h2 class="section-title">New for You</h2>
+        <div class="notif-card">
+          <div 
+            class="notif-row" 
+            *ngFor="let notif of newNotifications"
+            [class.unread]="!notif.isRead"
+            [class.deleting]="notif.isDeleting"
+            (click)="openNotification(notif)"
+          >
+            <div class="notif-avatar-col">
+              <div class="notif-avatar-wrapper" [class.has-story]="notif.targetStoryId">
+                <img *ngIf="getSenderAvatarUrl(notif)" [src]="getSenderAvatarUrl(notif)" class="notif-avatar" alt="" />
+                <div *ngIf="!getSenderAvatarUrl(notif)" class="notif-avatar-placeholder">{{ getSenderInitial(notif) }}</div>
+                <div class="notif-type-icon" [ngClass]="notif.type" *ngIf="isLikeNotification(notif)">❤️</div>
+                <div class="notif-type-icon" [ngClass]="notif.type" *ngIf="isCommentNotification(notif)">💬</div>
+                <div class="notif-type-icon" [ngClass]="notif.type" *ngIf="isFollowNotification(notif)">👤</div>
+                <div class="notif-type-icon" [ngClass]="notif.type" *ngIf="isMentionNotification(notif)">@</div>
+              </div>
+            </div>
+            <div class="notif-content-col">
+              <div class="notif-message">
+                <span class="notif-user-bold">{{ getSenderName(notif) }}</span>
+                <span class="notif-text-message"> {{ getNotificationMessage(notif) }}</span>
+                <span class="notif-time">{{ getNotificationTime(notif) }}</span>
+              </div>
+            </div>
+            <div class="notif-action-col">
+              <div class="notif-btn-group" *ngIf="isFollowRequest(notif) && notif.requestStatus === 'PENDING'">
+                <button class="btn-action confirm" (click)="acceptFollowRequest(notif, $event)">Confirm</button>
+                <button class="btn-action delete-req" (click)="declineFollowRequest(notif, $event)">x</button>
+              </div>
+              <button class="btn-action follow-back" *ngIf="isFollowNotification(notif) && !followStates[notif.senderEmail]" (click)="followBack(notif, $event)">Follow back</button>
+              <div class="notif-thumbnail" *ngIf="showThumbnail(notif)">
+                <img [src]="getPreviewImageUrl(notif)" alt="Preview" />
+                <span class="notif-play-badge" *ngIf="isVideoPreview(notif)" aria-hidden="true">▶</span>
+              </div>
+              <button class="btn-delete-notif" (click)="deleteNotification(notif, $event)">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Older Section -->
+      <div class="notif-section" *ngIf="olderNotifications.length > 0">
+        <h2 class="section-title">Older Activity</h2>
+        <div class="notif-card">
+          <div 
+            class="notif-row" 
+            *ngFor="let notif of olderNotifications"
+            [class.unread]="!notif.isRead"
+            [class.deleting]="notif.isDeleting"
+            (click)="openNotification(notif)"
+          >
+            <div class="notif-avatar-col">
+              <div class="notif-avatar-wrapper" [class.has-story]="notif.targetStoryId">
+                <img *ngIf="getSenderAvatarUrl(notif)" [src]="getSenderAvatarUrl(notif)" class="notif-avatar" alt="" />
+                <div *ngIf="!getSenderAvatarUrl(notif)" class="notif-avatar-placeholder">{{ getSenderInitial(notif) }}</div>
+                <div class="notif-type-icon" [ngClass]="notif.type" *ngIf="isLikeNotification(notif)">❤️</div>
+                <div class="notif-type-icon" [ngClass]="notif.type" *ngIf="isCommentNotification(notif)">💬</div>
+                <div class="notif-type-icon" [ngClass]="notif.type" *ngIf="isFollowNotification(notif)">👤</div>
+                <div class="notif-type-icon" [ngClass]="notif.type" *ngIf="isMentionNotification(notif)">@</div>
+              </div>
+            </div>
+            <div class="notif-content-col">
+              <div class="notif-message">
+                <span class="notif-user-bold">{{ getSenderName(notif) }}</span>
+                <span class="notif-text-message"> {{ getNotificationMessage(notif) }}</span>
+                <span class="notif-time">{{ getNotificationTime(notif) }}</span>
+              </div>
+            </div>
+            <div class="notif-action-col">
+              <div class="notif-btn-group" *ngIf="isFollowRequest(notif) && notif.requestStatus === 'PENDING'">
+                <button class="btn-action confirm" (click)="acceptFollowRequest(notif, $event)">Confirm</button>
+                <button class="btn-action delete-req" (click)="declineFollowRequest(notif, $event)">x</button>
+              </div>
+              <button class="btn-action follow-back" *ngIf="isFollowNotification(notif) && !followStates[notif.senderEmail]" (click)="followBack(notif, $event)">Follow back</button>
+              <div class="notif-thumbnail" *ngIf="showThumbnail(notif)">
+                <img [src]="getPreviewImageUrl(notif)" alt="Preview" />
+                <span class="notif-play-badge" *ngIf="isVideoPreview(notif)" aria-hidden="true">▶</span>
+              </div>
+              <button class="btn-delete-notif" (click)="deleteNotification(notif, $event)">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div #loadMoreAnchor class="load-more-trigger">
+        <div class="mini-spinner" *ngIf="loadingMore"></div>
+      </div>
+    </div>
+
+    <ng-template #emptyState>
+      <div class="notif-empty" *ngIf="!loading">
+        <span class="empty-icon">CS</span>
+        <h3>No notifications yet</h3>
+        <p>Real-time updates from your circle will appear here. Start exploring to fill your feed!</p>
+      </div>
+    </ng-template>
+
+    <div class="notif-loading" *ngIf="loading && visibleNotifications.length === 0">
+      <div class="loading-spinner"></div>
+      <p>Gathering your updates...</p>
+    </div>
+  </div>
+</div>

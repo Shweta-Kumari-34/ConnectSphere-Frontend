@@ -1,0 +1,256 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>{{ dashboardTitle }}</h1>
+  </div>
+
+  <div class="success-message" *ngIf="successMessage">{{ successMessage }}</div>
+
+  <div class="tab-bar">
+    <button
+      *ngFor="let tab of tabs"
+      [class.active]="activeTab===tab.key"
+      (click)="selectTab(tab.key)"
+    >
+      {{ tab.label }}
+    </button>
+  </div>
+
+  <div *ngIf="activeTab==='analytics' && canViewAnalytics()">
+    <div class="stats-grid">
+      <div class="stat-card primary">
+        <span class="stat-icon">Users</span>
+        <div class="stat-info">
+          <span class="stat-value">{{ totalUsers }}</span>
+          <span class="stat-label">Total Users</span>
+        </div>
+      </div>
+      <div class="stat-card green">
+        <span class="stat-icon">OK</span>
+        <div class="stat-info">
+          <span class="stat-value">{{ activeUsers }}</span>
+          <span class="stat-label">Active Users</span>
+        </div>
+      </div>
+      <div class="stat-card red">
+        <span class="stat-icon">Blocked</span>
+        <div class="stat-info">
+          <span class="stat-value">{{ suspendedUsers }}</span>
+          <span class="stat-label">Suspended</span>
+        </div>
+      </div>
+      <div class="stat-card amber">
+        <span class="stat-icon">Staff</span>
+        <div class="stat-info">
+          <span class="stat-value">{{ adminCount }}</span>
+          <span class="stat-label">Admins</span>
+        </div>
+      </div>
+      <div class="stat-card blue">
+        <span class="stat-icon">Posts</span>
+        <div class="stat-info">
+          <span class="stat-value">{{ totalPosts }}</span>
+          <span class="stat-label">Total Posts</span>
+        </div>
+      </div>
+      <div class="stat-card teal">
+        <span class="stat-icon">Public</span>
+        <div class="stat-info">
+          <span class="stat-value">{{ publicPosts }}</span>
+          <span class="stat-label">Public Posts</span>
+        </div>
+      </div>
+      <div class="stat-card purple">
+        <span class="stat-icon">Followers</span>
+        <div class="stat-info">
+          <span class="stat-value">{{ followersOnlyPosts }}</span>
+          <span class="stat-label">Followers Only</span>
+        </div>
+      </div>
+      <div class="stat-card dark">
+        <span class="stat-icon">Private</span>
+        <div class="stat-info">
+          <span class="stat-value">{{ privatePosts }}</span>
+          <span class="stat-label">Private Posts</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="analytics-section" *ngIf="trendingHashtags.length > 0">
+      <h3>Trending Hashtags</h3>
+      <div class="trending-chips">
+        <span class="trending-chip" *ngFor="let t of trendingHashtags.slice(0, 8)">
+          #{{ t.tag || t }}
+        </span>
+      </div>
+    </div>
+
+    <div class="analytics-section">
+      <h3>Reports Overview</h3>
+      <div class="report-count">
+        <span class="report-badge pending">{{ reportStats.pending }} pending</span>
+        <span class="report-badge resolved">{{ reportStats.resolved }} resolved</span>
+        <span class="report-badge dismissed">{{ reportStats.dismissed }} dismissed</span>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab==='users' && canManageUsers()">
+    <div class="search-bar">
+      <input type="text" [(ngModel)]="searchKeyword" placeholder="Search users by name or email..." (keyup.enter)="searchUsers()" />
+      <button class="btn-primary" (click)="searchUsers()">Search</button>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of users" [class.suspended]="user.active === false">
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td><span class="badge" [ngClass]="user.role?.toLowerCase()">{{ user.role }}</span></td>
+            <td>
+              <span class="status-badge" [class.active]="user.active !== false" [class.suspended]="user.active === false">
+                {{ user.active === false ? 'Suspended' : 'Active' }}
+              </span>
+            </td>
+            <td class="action-cell">
+              <button *ngIf="user.active !== false" class="action-btn-sm warn" (click)="suspendUser(user.id)" title="Suspend">
+                Suspend
+              </button>
+              <button *ngIf="user.active === false" class="action-btn-sm success" (click)="reactivateUser(user.id)" title="Reactivate">
+                Reactivate
+              </button>
+              <button class="action-btn-sm danger" (click)="deleteUser(user.id)" title="Delete permanently">
+                Delete
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="empty-state" *ngIf="users.length === 0"><p>No users found</p></div>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab==='posts' && canManagePosts()">
+    <div class="card-list">
+      <div class="post-card" *ngFor="let post of posts">
+        <div class="post-meta">
+          <span class="post-author">{{ post.userEmail }}</span>
+          <span class="post-visibility" [ngClass]="post.visibility?.toLowerCase()">
+            {{ post.visibility }}
+          </span>
+        </div>
+        <h3>{{ post.title }}</h3>
+        <p>{{ post.content | slice:0:200 }}{{ post.content?.length > 200 ? '...' : '' }}</p>
+        <div class="post-actions-admin">
+          <span>Likes {{ post.likeCount || 0 }}</span>
+          <span>Comments {{ post.commentCount || 0 }}</span>
+          <span class="post-time">{{ getTimeAgo(post.createdAt) }}</span>
+          <button
+            type="button"
+            class="btn-danger"
+            (click)="deletePost(post.id); $event.preventDefault(); $event.stopPropagation()">
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="empty-state" *ngIf="posts.length === 0"><p>No posts</p></div>
+  </div>
+
+  <div *ngIf="activeTab==='reports' && canHandleReports()">
+    <div class="report-filters">
+      <button [class.active]="reportFilter==='all'" (click)="reportFilter='all'">All</button>
+      <button [class.active]="reportFilter==='pending'" (click)="reportFilter='pending'">Pending</button>
+      <button [class.active]="reportFilter==='resolved'" (click)="reportFilter='resolved'">Resolved</button>
+      <button [class.active]="reportFilter==='dismissed'" (click)="reportFilter='dismissed'">Dismissed</button>
+    </div>
+
+    <div class="report-list">
+      <div class="report-card" *ngFor="let r of filteredReports" [ngClass]="r.status">
+        <div class="report-header">
+          <div class="report-meta">
+            <span class="report-type">{{ r.targetType }} #{{ r.targetId }}</span>
+            <span class="report-reason">{{ r.reason }}</span>
+          </div>
+          <span class="report-status-badge" [ngClass]="r.status">{{ r.status }}</span>
+        </div>
+        <div class="report-body">
+          <span class="report-reporter">Reported by: {{ r.reporterEmail }}</span>
+          <span class="report-time">{{ getTimeAgo(r.createdAt) }}</span>
+        </div>
+        <div class="report-actions" *ngIf="r.status === 'pending'">
+          <button class="action-btn-sm danger" (click)="removeReportedContent(r)">Remove Content</button>
+          <button class="action-btn-sm success" (click)="resolveReport(r, 'resolved')">Resolve</button>
+          <button class="action-btn-sm muted" (click)="resolveReport(r, 'dismissed')">Dismiss</button>
+        </div>
+      </div>
+      <div class="empty-state" *ngIf="filteredReports.length === 0"><p>No reports</p></div>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab==='verification' && canReviewVerification()">
+    <div class="report-list">
+      <div class="report-card pending" *ngFor="let request of verificationRequests">
+        <div class="report-header">
+          <div class="report-meta">
+            <span class="report-type">Request #{{ request.id }}</span>
+            <span class="report-reason">User: {{ request.username }} ({{ request.userEmail }})</span>
+          </div>
+          <span class="report-status-badge pending">{{ request.status }}</span>
+        </div>
+        <div class="report-body">
+          <span class="report-reporter">Reason: {{ request.reason || 'Not provided' }}</span>
+          <span class="report-time">{{ getTimeAgo(request.submittedAt) }}</span>
+        </div>
+        <div class="report-actions">
+          <button class="action-btn-sm success" (click)="approveVerification(request)">Approve</button>
+          <button class="action-btn-sm muted" (click)="rejectVerification(request)">Reject</button>
+        </div>
+      </div>
+      <div class="empty-state" *ngIf="verificationRequests.length === 0"><p>No pending verification requests</p></div>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab==='trending' && canViewTrending()">
+    <div class="trending-table">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Hashtag</th><th>Post Count</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of trendingHashtags; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td class="hashtag-cell">#{{ t.tag || t }}</td>
+            <td>{{ t.count || '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="empty-state" *ngIf="trendingHashtags.length === 0"><p>No trending hashtags</p></div>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab==='notify' && canBroadcast()">
+    <div class="create-form">
+      <h3>Platform-Wide Broadcast</h3>
+      <p class="form-desc">Send a notification to all {{ totalUsers }} users on the platform.</p>
+      <div class="form-group">
+        <label>Notification Type</label>
+        <select [(ngModel)]="bulkType">
+          <option value="SYSTEM">System</option>
+          <option value="ALERT">Alert</option>
+          <option value="ANNOUNCEMENT">Announcement</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Message</label>
+        <textarea [(ngModel)]="bulkMessage" rows="4" placeholder="Type your platform-wide notification..."></textarea>
+      </div>
+      <button class="btn-primary" (click)="sendBulkNotification()" [disabled]="!bulkMessage.trim()">
+        Send to All Users ({{ totalUsers }})
+      </button>
+    </div>
+  </div>
+</div>

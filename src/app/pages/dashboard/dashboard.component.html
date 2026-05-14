@@ -1,0 +1,179 @@
+<div class="dashboard-container">
+  <div class="dash-top">
+    <div class="dash-greeting-card">
+      <h1>
+        {{ greeting }},
+        <span class="username-gradient">{{ username }}</span>
+        <span class="verified-badge" *ngIf="isVerified">&#10003;</span>
+      </h1>
+      <p class="dash-subtitle">Your space to connect, create, and stay close to what matters.</p>
+      <p class="dash-notif-summary" *ngIf="unreadNotifications > 0">
+        You have <strong>{{ unreadNotifications }}</strong> new notification{{ unreadNotifications > 1 ? 's' : '' }}.
+      </p>
+      <p class="dash-notif-summary clear" *ngIf="unreadNotifications === 0">
+        You're all caught up!
+      </p>
+    </div>
+
+    <div class="dash-profile-card">
+      <div class="profile-pic-wrapper">
+         <img *ngIf="profilePicUrl" [src]="profilePicUrl" alt="Profile" />
+         <div *ngIf="!profilePicUrl" class="profile-placeholder">{{ username.charAt(0).toUpperCase() }}</div>
+         <div class="premium-badge" *ngIf="isPremiumMember">💎</div>
+      </div>
+      <div class="profile-info">
+        <h3>{{ username }}</h3>
+        <div class="completion-bar-container">
+          <div class="completion-bar" [style.width.%]="profileCompletion"></div>
+        </div>
+        <span class="completion-text">{{ profileCompletion }}% Profile Complete</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <a routerLink="/posts" class="stat-box">
+      <div class="stat-value">{{ totalPosts }}</div>
+      <div class="stat-label">Posts</div>
+    </a>
+    <a routerLink="/reels" class="stat-box">
+      <div class="stat-value">{{ totalReels }}</div>
+      <div class="stat-label">Reels</div>
+    </a>
+    <a routerLink="/stories" class="stat-box">
+      <div class="stat-value">{{ totalStories }}</div>
+      <div class="stat-label">Stories</div>
+    </a>
+    <a routerLink="/follows" class="stat-box">
+      <div class="stat-value">{{ followerCount }}</div>
+      <div class="stat-label">Followers</div>
+    </a>
+    <a routerLink="/follows" class="stat-box">
+      <div class="stat-value">{{ followingCount }}</div>
+      <div class="stat-label">Following</div>
+    </a>
+    <div class="stat-box">
+      <div class="stat-value">{{ likesReceived }}</div>
+      <div class="stat-label">Likes</div>
+    </div>
+    <a routerLink="/notifications" class="stat-box highlight">
+      <div class="stat-value">{{ unreadNotifications }}</div>
+      <div class="stat-label">Updates</div>
+    </a>
+  </div>
+
+  <div class="main-dashboard-grid">
+    <div class="dash-column left-col">
+      <div class="dash-card fade-in-up">
+        <h2 class="card-title">Your Latest Media</h2>
+        <div class="media-carousel" *ngIf="latestMedia.length > 0">
+           <a [routerLink]="media.mediaType ? '/stories' : '/reels'" [queryParams]="media.mediaType ? {} : { reelId: media.id }" class="media-item" *ngFor="let media of latestMedia">
+              <img *ngIf="media.thumbnailUrl || (media.mediaType === 'IMAGE' ? media.mediaUrl : null)" [src]="media.thumbnailUrl || media.mediaUrl" />
+              <video *ngIf="!media.thumbnailUrl && media.mediaType !== 'IMAGE'" [src]="media.mediaUrl + '#t=1.0'" preload="metadata" muted></video>
+              <div class="media-overlay">
+                 <span class="media-type-icon">{{ media.mediaType ? '📷' : '🎬' }}</span>
+                 <span class="media-views">👁️ {{ media.viewsCount || 0 }}</span>
+                 <span class="media-likes">❤️ {{ media.likeCount || media.likesCount || 0 }}</span>
+              </div>
+           </a>
+        </div>
+        <div class="empty-state" *ngIf="latestMedia.length === 0">
+          <p>No recent media found.</p>
+          <div class="empty-actions">
+            <a routerLink="/reels" class="btn-sm">Upload Reel</a>
+            <a routerLink="/stories" class="btn-sm">Add Story</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-card fade-in-up delay-1">
+        <h2 class="card-title">Recent Activity</h2>
+        <div class="activity-list" *ngIf="activities.length > 0">
+           <a [routerLink]="a.actionUrl || null" class="activity-card" *ngFor="let a of activities" [class.unread]="!a.isRead">
+             <div class="act-icon" [ngClass]="a.iconClass">{{ a.icon }}</div>
+             <div class="act-body">
+               <div class="act-text">{{ a.text }}</div>
+               <div class="act-time">{{ a.time }}</div>
+             </div>
+             <div class="act-thumb" *ngIf="a.thumbnailUrl">
+               <img [src]="a.thumbnailUrl" />
+             </div>
+           </a>
+        </div>
+        <div class="empty-state" *ngIf="activities.length === 0">
+          <p>Nothing new right now. Explore community to connect!</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-column right-col">
+      <div class="dash-card fade-in-up delay-2">
+        <h2 class="card-title">Quick Actions</h2>
+        <div class="quick-actions-grid">
+          <a routerLink="/posts" class="action-card">
+            <span class="action-emoji">&#128221;</span>
+            <span class="action-text">Post</span>
+          </a>
+          <a routerLink="/reels" class="action-card">
+            <span class="action-emoji">&#127916;</span>
+            <span class="action-text">Reel</span>
+          </a>
+          <a routerLink="/stories" class="action-card">
+            <span class="action-emoji">&#128214;</span>
+            <span class="action-text">Story</span>
+          </a>
+          <a routerLink="/search" class="action-card">
+            <span class="action-emoji">&#128269;</span>
+            <span class="action-text">Explore</span>
+          </a>
+          <a *ngIf="canAccessAdminPanel()" routerLink="/admin" class="action-card admin-action">
+            <span class="action-emoji">&#128737;</span>
+            <span class="action-text">{{ isModeratorOnly() ? 'Moderation' : 'Admin' }}</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="dash-card fade-in-up delay-3">
+        <h2 class="card-title">Highlights</h2>
+        <div class="widgets-list">
+          <div class="widget-item" *ngIf="trendingHashtag">
+            <div class="widget-icon fire">🔥</div>
+            <div class="widget-info">
+              <span class="widget-label">Trending Now</span>
+              <span class="widget-value">#{{ trendingHashtag }}</span>
+            </div>
+          </div>
+
+          <div class="widget-item" *ngIf="latestFollower">
+            <div class="widget-icon user">👤</div>
+            <div class="widget-info">
+              <span class="widget-label">New Follower</span>
+              <span class="widget-value">{{ latestFollower.senderUsername || latestFollower.senderEmail.split('@')[0] }}</span>
+            </div>
+          </div>
+
+          <div class="widget-item" *ngIf="latestComment">
+            <div class="widget-icon comment">💬</div>
+            <div class="widget-info">
+              <span class="widget-label">Recent Comment</span>
+              <span class="widget-value truncate">"{{ decodeNotificationText(latestComment.message) }}"</span>
+            </div>
+          </div>
+          
+          <div class="widget-item" *ngIf="suggestedUsers.length > 0">
+            <div class="widget-icon star">✨</div>
+            <div class="widget-info">
+              <span class="widget-label">Suggested Connection</span>
+              <span class="widget-value">{{ suggestedUsers[0].username }}</span>
+            </div>
+            <a [routerLink]="'/user/' + suggestedUsers[0].email" class="btn-xs">View</a>
+          </div>
+          
+          <div class="empty-state" *ngIf="!trendingHashtag && !latestFollower && !latestComment && suggestedUsers.length === 0">
+            Interact with the community to see highlights here.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

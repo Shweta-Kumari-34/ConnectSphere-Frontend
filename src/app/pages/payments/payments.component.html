@@ -1,0 +1,291 @@
+<div class="payments-page">
+  <div class="checkout-overlay processing" *ngIf="checkoutOverlayState === 'processing'">
+    <div class="checkout-dialog processing-card">
+      <div class="processing-spinner" aria-hidden="true"></div>
+      <h2>Processing payment...</h2>
+      <p>Please wait while we confirm your transaction and unlock your benefits.</p>
+    </div>
+  </div>
+
+  <div class="checkout-overlay success" *ngIf="checkoutOverlayState === 'success' && paymentSuccessState">
+    <div class="confetti-layer" aria-hidden="true">
+      <span class="confetti confetti-a"></span>
+      <span class="confetti confetti-b"></span>
+      <span class="confetti confetti-c"></span>
+      <span class="confetti confetti-d"></span>
+      <span class="confetti confetti-e"></span>
+      <span class="confetti confetti-f"></span>
+      <span class="confetti confetti-g"></span>
+      <span class="confetti confetti-h"></span>
+    </div>
+    <div class="checkout-dialog success-dialog">
+      <div class="success-icon large" aria-hidden="true">
+        <span class="tick"></span>
+      </div>
+      <p class="success-kicker">Checkout Complete</p>
+      <h2>{{ paymentSuccessState.title }}</h2>
+      <p class="success-amount">{{ paymentSuccessState.paidAmountLabel }} paid successfully</p>
+      <p class="success-body">{{ paymentSuccessState.message }}</p>
+
+      <div class="success-summary">
+        <div>
+          <span class="summary-label">Transaction ID</span>
+          <strong>{{ paymentSuccessState.transactionId }}</strong>
+        </div>
+        <div>
+          <span class="summary-label">Activated Plan</span>
+          <strong>{{ paymentSuccessState.planName }}</strong>
+        </div>
+        <div>
+          <span class="summary-label">Success Time</span>
+          <strong>{{ paymentSuccessState.confirmedAt | date:'medium' }}</strong>
+        </div>
+        <div *ngIf="paymentSuccessState.receiptNumber">
+          <span class="summary-label">Receipt</span>
+          <strong>{{ paymentSuccessState.receiptNumber }}</strong>
+        </div>
+      </div>
+
+      <ul class="success-checklist large">
+        <li *ngFor="let item of paymentSuccessState.checklist">{{ item }}</li>
+      </ul>
+
+      <div class="success-cta-row">
+        <button class="btn-secondary" type="button" (click)="closeCheckoutSuccess()">Continue</button>
+        <button class="btn-primary" type="button" (click)="viewSubscriptionFromSuccess()">View Subscription</button>
+        <button class="btn-primary alt" type="button" (click)="downloadSuccessReceipt()">Download Receipt</button>
+      </div>
+    </div>
+  </div>
+
+  <header class="page-header">
+    <h1>Premium & Verification</h1>
+    <p>&ldquo;Unlock more ways to connect and create.&rdquo;</p>
+  </header>
+
+  <div class="toast-inline success" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="toast-inline error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <section class="status-grid">
+    <article class="status-card">
+      <h3>Verified Badge</h3>
+      <span class="pill" [class.active]="verifiedActive">{{ verifiedActive ? 'Active' : 'Not Active' }}</span>
+      <p *ngIf="verificationRequest?.status && verificationRequest?.status !== 'NONE'">
+        Verification request: <strong>{{ verificationRequest?.status }}</strong>
+      </p>
+      <p *ngIf="!verificationRequest?.status || verificationRequest?.status === 'NONE'">
+        No active verification request.
+      </p>
+    </article>
+
+    <article class="status-card">
+      <h3>Premium Membership</h3>
+      <span class="pill" [class.active]="premiumActive">{{ premiumActive ? 'Active' : 'Expired' }}</span>
+      <p *ngIf="currentProfile?.premiumExpiresAt">
+        Expires: {{ currentProfile?.premiumExpiresAt | date:'medium' }}
+      </p>
+      <p *ngIf="!currentProfile?.premiumExpiresAt">
+        No premium subscription found.
+      </p>
+    </article>
+  </section>
+
+  <section class="cards-grid">
+    <article class="plan-card">
+      <h2>Verified Badge</h2>
+      <p>Identity checks + blue badge visibility on profile, posts, comments, and search.</p>
+      <ul>
+        <li>Eligibility checks (username + profile photo)</li>
+        <li>Admin review and approval flow</li>
+        <li>Optional document and selfie submission</li>
+        <li>Blue verification badge after payment confirmation</li>
+      </ul>
+      <div class="price">INR 699</div>
+
+      <div class="eligibility" *ngIf="eligibility">
+        <div *ngIf="eligibility.eligible" class="ok">Eligible for verification.</div>
+        <div *ngIf="!eligibility.eligible" class="warn">Not eligible yet:</div>
+        <ul *ngIf="!eligibility.eligible">
+          <li *ngFor="let blocker of eligibility.blockers">{{ blocker }}</li>
+        </ul>
+      </div>
+
+      <div class="form-row">
+        <label>Reason</label>
+        <select [(ngModel)]="verificationReasonPreset">
+          <option *ngFor="let option of verificationReasonOptions" [value]="option.value">{{ option.label }}</option>
+        </select>
+        <textarea
+          *ngIf="verificationReasonPreset === 'OTHER'"
+          [(ngModel)]="verificationReason"
+          rows="2"
+          placeholder="Enter your custom reason"
+        ></textarea>
+      </div>
+
+      <div class="form-row check-row">
+        <label><input type="checkbox" [(ngModel)]="includeDocument" /> Add identity document</label>
+        <input *ngIf="includeDocument" type="file" (change)="onDocumentSelected($event)" />
+      </div>
+      <div class="form-row check-row">
+        <label><input type="checkbox" [(ngModel)]="includeSelfie" /> Add selfie verification</label>
+        <input *ngIf="includeSelfie" type="file" (change)="onSelfieSelected($event)" />
+      </div>
+
+      <button class="btn-primary" (click)="submitVerificationApplication()" [disabled]="loading">
+        Submit Verification Application
+      </button>
+
+      <button
+        class="btn-secondary"
+        (click)="startPlanPayment('VERIFIED_BADGE')"
+        [disabled]="loading || processingPlan === 'VERIFIED_BADGE' || !canPayVerifiedBadge"
+      >
+        {{ processingPlan === 'VERIFIED_BADGE' && loading ? 'Creating Payment...' : 'Pay for Verified Badge' }}
+      </button>
+    </article>
+
+    <article class="plan-card premium">
+      <h2>Premium Membership</h2>
+      <p>Unlock profile boost, analytics, priority support, exclusive themes, advanced privacy, and search visibility boost.</p>
+      <ul>
+        <li>Profile boost and higher search ranking</li>
+        <li>Analytics and insights dashboard support</li>
+        <li>Priority support and premium themes</li>
+        <li>Advanced privacy controls</li>
+      </ul>
+      <div class="price">INR 999 / month</div>
+
+      <div class="form-row">
+        <label>Payment Provider</label>
+        <select [(ngModel)]="selectedProvider">
+          <option value="UPI_QR">UPI QR</option>
+          <option value="RAZORPAY">Razorpay Sandbox</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Premium Theme</label>
+        <select [(ngModel)]="premiumTheme">
+          <option value="CLASSIC">Classic</option>
+          <option value="MIDNIGHT">Midnight</option>
+          <option value="AURORA">Aurora</option>
+        </select>
+      </div>
+      <div class="form-row check-row">
+        <label><input type="checkbox" [(ngModel)]="autoRenew" /> Enable auto-renew</label>
+      </div>
+
+      <button
+        class="btn-primary"
+        (click)="startPlanPayment('PREMIUM_MEMBERSHIP')"
+        [disabled]="loading || processingPlan === 'PREMIUM_MEMBERSHIP'"
+      >
+        {{ processingPlan === 'PREMIUM_MEMBERSHIP' && loading ? 'Creating Payment...' : 'Buy Premium Membership' }}
+      </button>
+    </article>
+  </section>
+
+  <section class="intent-card" *ngIf="pendingIntent">
+    <ng-container *ngIf="pendingIntent">
+      <h3>Payment Confirmation</h3>
+      <p>{{ pendingIntent.message }} | Txn: <strong>{{ pendingIntent.transactionId }}</strong></p>
+      <p>Provider: {{ pendingIntent.paymentProvider }} | Amount: {{ pendingIntent.currency }} {{ pendingIntent.amount }}</p>
+      <p *ngIf="pendingIntent.expiresAt">Expires: {{ pendingIntent.expiresAt | date:'short' }}</p>
+      <img *ngIf="pendingIntent.upiQrImageUrl" [src]="pendingIntent.upiQrImageUrl" alt="UPI QR code" class="qr-preview" />
+      <p class="upi-payload" *ngIf="pendingIntent.paymentProvider === 'UPI_QR' && pendingIntent.upiQrPayload">
+        UPI Payload: <code>{{ pendingIntent.upiQrPayload }}</code>
+      </p>
+      <p class="upi-fallback" *ngIf="pendingIntent.paymentProvider === 'RAZORPAY'">
+        Razorpay sandbox supports cards, UPI, wallets, and netbanking. No real money is charged in this demo.
+      </p>
+      <p class="upi-fallback" *ngIf="pendingIntent.paymentProvider === 'UPI_QR' && !pendingIntent.upiQrImageUrl">
+        QR unavailable on this device/network. Use the UPI payload above to complete payment.
+      </p>
+      <div class="intent-actions" *ngIf="pendingIntent.paymentProvider === 'UPI_QR'">
+        <button class="btn-primary" type="button" (click)="confirmPendingPayment(true)" [disabled]="loading">
+          {{ pendingConfirmationAction === 'success' && loading ? 'Confirming Payment...' : 'Confirm Payment' }}
+        </button>
+        <button class="btn-secondary" type="button" (click)="confirmPendingPayment(false)" [disabled]="loading">
+          {{ pendingConfirmationAction === 'failed' && loading ? 'Updating Status...' : 'Mark Failed' }}
+        </button>
+      </div>
+      <div class="intent-actions" *ngIf="pendingIntent.paymentProvider === 'RAZORPAY'">
+        <button class="btn-primary" type="button" (click)="retryRazorpayCheckout()" [disabled]="loading">
+          Open Razorpay Checkout
+        </button>
+        <button class="btn-secondary" type="button" (click)="confirmPendingPayment(false)" [disabled]="loading">
+          {{ pendingConfirmationAction === 'failed' && loading ? 'Updating Status...' : 'Mark Failed' }}
+        </button>
+      </div>
+    </ng-container>
+  </section>
+
+  <section class="table-section" #subscriptionSection>
+    <h2>Subscription Settings</h2>
+    <div class="table-wrap" *ngIf="subscriptions.length; else emptySubs">
+      <table>
+        <thead>
+          <tr>
+            <th>Plan</th>
+            <th>Status</th>
+            <th>Expiry</th>
+            <th>Auto-Renew</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let subscription of subscriptions">
+            <td>{{ subscription.planCode }}</td>
+            <td>{{ subscription.status }}</td>
+            <td>{{ subscription.expiresAt | date:'short' }}</td>
+            <td>{{ subscription.autoRenew ? 'Enabled' : 'Disabled' }}</td>
+            <td class="actions">
+              <button (click)="toggleAutoRenew(subscription)">
+                {{ subscription.autoRenew ? 'Disable Auto' : 'Enable Auto' }}
+              </button>
+              <button (click)="renewSubscription(subscription)">Renew</button>
+              <button *ngIf="subscription.planCode === 'VERIFIED_BADGE'" (click)="upgradeToPremium(subscription)">Upgrade</button>
+              <button (click)="cancelSubscription(subscription)">Cancel</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ng-template #emptySubs>
+      <p class="empty">No subscriptions yet.</p>
+    </ng-template>
+  </section>
+
+  <section class="table-section">
+    <h2>Transaction History & Receipts</h2>
+    <div class="table-wrap" *ngIf="payments.length; else emptyPayments">
+      <table>
+        <thead>
+          <tr>
+            <th>Transaction</th>
+            <th>Plan</th>
+            <th>Status</th>
+            <th>Amount</th>
+            <th>Created</th>
+            <th>Receipt</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let payment of payments">
+            <td>{{ payment.transactionId }}</td>
+            <td>{{ payment.planCode }}</td>
+            <td>{{ payment.status }}</td>
+            <td>{{ payment.currency }} {{ payment.amount }}</td>
+            <td>{{ payment.createdAt | date:'short' }}</td>
+            <td>
+              <button (click)="getReceipt(payment.paymentId, payment.transactionId)" [disabled]="payment.status !== 'CONFIRMED' && payment.status !== 'SUCCESS'">Get Receipt</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ng-template #emptyPayments>
+      <p class="empty">No transactions yet.</p>
+    </ng-template>
+  </section>
+</div>

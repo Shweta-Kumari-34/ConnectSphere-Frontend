@@ -1,0 +1,241 @@
+<div #feedContainer
+     class="reels-feed"
+     (click)="closePanels()">
+  <div #reelContainer
+       class="reel-container"
+       *ngFor="let reel of reels; let i = index"
+       [attr.data-reel-id]="reel.id"
+       [attr.data-client-id]="reel.clientId || reel.id">
+    <div class="reel-video-wrapper">
+      
+      <!-- Loading Spinner -->
+      <div class="reel-loading" *ngIf="isLoading[i]">
+        <div class="spinner"></div>
+      </div>
+      
+      <!-- Video Element -->
+      <video *ngIf="hasPlayableMedia(reel) && isVideo(reel)"
+             #videoElement
+             [attr.data-index]="i"
+             class="reel-media"
+             [src]="getReelMediaSrc(reel)"
+             [muted]="isMuted"
+             playsinline
+             loop
+             autoplay
+             preload="auto"
+             (loadstart)="onLoadStart(i)"
+             (loadedmetadata)="onVideoLoaded(i, videoElement)"
+             (canplay)="onCanPlay(i)"
+             (playing)="onCanPlay(i)"
+             (timeupdate)="onVideoProgress(i)"
+             (loadeddata)="onCanPlay(i)"
+             (error)="handleVideoError(i, videoElement)"
+             (click)="$event.stopPropagation(); togglePlayPause(videoElement)">
+      </video>
+
+      <!-- Fallback Image for uploaded photo reels -->
+      <img *ngIf="hasPlayableMedia(reel) && !isVideo(reel)" class="reel-media" [src]="getReelMediaSrc(reel)" alt="Reel" />
+
+      <div class="reel-loading" *ngIf="!hasPlayableMedia(reel)">
+        <div class="comment-empty">Media unavailable</div>
+      </div>
+
+      <div class="reel-media-error" *ngIf="hasPlayableMedia(reel) && isMediaFailed(reel)">
+        <div>Video could not be played on this browser.</div>
+        <div class="reel-media-error-sub">Try uploading H.264/AAC MP4 for best compatibility.</div>
+      </div>
+
+      <!-- Overlays -->
+      <div class="reel-overlay">
+        
+        <!-- Visibility Badge (Admin/Debug) -->
+        <div class="reel-visibility-badge" *ngIf="reel.visibility">
+          {{ reel.visibility }}
+        </div>
+
+        <!-- Bottom Left Info -->
+        <div class="reel-content">
+          <div class="reel-user">
+            <a class="reel-avatar-link" [routerLink]="['/user', reel.userEmail]">
+              <div class="reel-avatar">{{ getReelInitial(reel.userEmail) }}</div>
+            </a>
+            <a class="reel-username" [routerLink]="['/user', reel.userEmail]">
+              {{ getReelDisplayName(reel.userEmail) }}
+            </a>
+            <button class="follow-btn" *ngIf="!isMe(reel.userEmail)"
+                    (click)="$event.stopPropagation(); isFollowingUser(reel.userEmail) ? unfollowUser(reel.userEmail) : followUser(reel.userEmail)">
+              {{ isFollowingUser(reel.userEmail) ? 'Following' : 'Follow' }}
+            </button>
+          </div>
+          <p class="reel-caption">{{ reel.caption }}</p>
+          
+          <div class="audio-ticker" (click)="toggleMute($event)">
+            <svg class="music-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+            </svg>
+            <div class="ticker-wrap">
+              <div class="ticker-text">{{ reel['audioName'] || 'Original Audio' }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Vertical Actions -->
+        <div class="reel-actions-right">
+          <button class="action-btn" (click)="$event.stopPropagation(); toggleLike(reel)">
+            <svg class="action-icon" [class.liked]="liked.has(reel.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+            <span class="action-count">{{ formatViews(reel.likesCount) }}</span>
+          </button>
+          
+          <button class="action-btn" (click)="$event.stopPropagation(); toggleComments()">
+            <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+            <span class="action-count">{{ reelComments[reel.id]?.length || reel.commentsCount || 0 }}</span>
+          </button>
+
+          <button class="action-btn" (click)="$event.stopPropagation(); toggleShare()">
+            <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 6 22 2"></polygon>
+            </svg>
+          </button>
+
+          <button class="action-btn" (click)="$event.stopPropagation(); toggleSave(reel)">
+            <svg class="action-icon" [class.saved]="saved.has(reel.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </button>
+
+          <button class="action-btn mt-2" (click)="toggleMute($event)">
+            <svg class="action-icon" *ngIf="isMuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+            <svg class="action-icon" *ngIf="!isMuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+          </button>
+
+          <button class="action-btn mt-2" *ngIf="canDeleteReel(reel)" (click)="deleteReel(reel, $event)" title="Delete Reel">
+            <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+              <path d="M10 11v6"></path>
+              <path d="M14 11v6"></path>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="reels-empty" *ngIf="reels.length === 0">
+    <div class="empty-icon">🎥</div>
+    <h2>No Reels Yet</h2>
+    <p>Be the first to share a reel!</p>
+  </div>
+
+  <!-- Side Panels (Comments / Share) overlaying the feed when active -->
+  <div class="side-panel-backdrop" *ngIf="showComments || showSharePanel" (click)="closePanels()"></div>
+  
+  <div class="side-panel comments-panel" *ngIf="showComments" (click)="$event.stopPropagation()">
+    <div class="panel-header">
+      <h3>Comments</h3>
+      <button class="panel-close" (click)="closePanels()">&times;</button>
+    </div>
+    <div class="comment-list">
+      <div class="comment-empty" *ngIf="currentComments.length === 0">
+        No comments yet. Be the first!
+      </div>
+      <div class="comment-item" *ngFor="let c of currentComments">
+        <div class="comment-header">
+          <span class="comment-user">@{{ c.user }}</span>
+        </div>
+        <div class="comment-text">{{ c.text }}</div>
+      </div>
+    </div>
+    <div class="comment-emoji-row">
+      <button class="emoji-chip" *ngFor="let emoji of quickCommentEmojis" (click)="addEmojiToComment(emoji)" [attr.aria-label]="'Add emoji ' + emoji">
+        {{ emoji }}
+      </button>
+    </div>
+    <div class="comment-input-area">
+      <input type="text" [(ngModel)]="commentText" (keyup.enter)="addComment()" placeholder="Add a comment..." />
+      <button class="send-btn" (click)="addComment()" [disabled]="!commentText.trim()">Post</button>
+    </div>
+  </div>
+
+  <div class="side-panel share-panel" *ngIf="showSharePanel" (click)="$event.stopPropagation()">
+    <div class="panel-header">
+      <h3>Share</h3>
+      <button class="panel-close" (click)="closePanels()">&times;</button>
+    </div>
+    <div class="share-content">
+      <button class="share-btn">📋 Copy Link</button>
+      <button class="share-btn">💬 Message</button>
+      <button class="share-btn">🐦 X</button>
+    </div>
+  </div>
+
+  <!-- Upload Button Overlay -->
+  <button class="upload-reel-btn" (click)="openUploadModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
+  </button>
+
+  <!-- Upload Modal -->
+  <div class="upload-modal-backdrop" *ngIf="showUploadModal" (click)="closeUploadModal()">
+    <div class="upload-modal" (click)="$event.stopPropagation()">
+      <h3>Upload Reel</h3>
+      
+      <div class="upload-area" *ngIf="!selectedFile">
+        <label for="reel-file" class="upload-label">
+          <span class="upload-icon">📁</span>
+          <span>Select Video</span>
+        </label>
+        <input type="file" id="reel-file" accept="video/*" (change)="onFileSelected($event)" hidden />
+      </div>
+
+      <div class="preview-area" *ngIf="selectedFile">
+        <video [src]="videoPreviewUrl" class="upload-preview" controls></video>
+        <button class="btn-change" (click)="selectedFile = null; videoPreviewUrl = null">Change Video</button>
+      </div>
+
+      <div class="form-group">
+        <label>Caption</label>
+        <textarea [(ngModel)]="uploadCaption" placeholder="Write a caption..."></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label>Visibility</label>
+        <select [(ngModel)]="uploadVisibility">
+          <option value="PUBLIC">Public</option>
+          <option value="PRIVATE">Private</option>
+        </select>
+      </div>
+
+      <div class="progress-bar-container" *ngIf="isUploading">
+        <div class="progress-bar-fill" [style.width.%]="uploadProgress"></div>
+        <span class="progress-label">{{ uploadProgress }}%</span>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="closeUploadModal()" [disabled]="isUploading">Cancel</button>
+        <button class="btn-submit" (click)="submitUpload()" [disabled]="isUploading || !selectedFile">
+          {{ isUploading ? 'Uploading...' : 'Upload' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+

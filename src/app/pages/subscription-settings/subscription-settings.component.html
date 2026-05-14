@@ -1,0 +1,78 @@
+<div class="settings-container">
+  <div class="settings-header">
+    <div class="badge">Settings</div>
+    <h1>Subscription Management</h1>
+    <p class="quote">"Control your experience. Amplify your presence."</p>
+  </div>
+
+  <div class="toast-container" *ngIf="successMessage || errorMessage">
+    <div class="toast success" *ngIf="successMessage">{{ successMessage }}</div>
+    <div class="toast error" *ngIf="errorMessage">{{ errorMessage }}</div>
+  </div>
+
+  <div class="content-grid">
+    <!-- Active Membership Fallback (if no specific subscription records are found) -->
+    <div class="premium-status-card" *ngIf="subscriptions.length === 0 && (isPremiumMember || isVerified)">
+      <div class="card-glow"></div>
+      <div class="card-content">
+        <div class="status-header">
+          <div class="icon-ring" [class.premium]="isPremiumMember">
+            <span class="emoji">{{ isPremiumMember ? '💎' : '✅' }}</span>
+          </div>
+          <div class="plan-info">
+            <h3>{{ isPremiumMember ? 'Premium Membership' : 'Verified Status' }}</h3>
+            <p class="status-label">Active & Applied</p>
+          </div>
+        </div>
+        <p class="description">
+          You are currently enjoying full access to {{ isPremiumMember ? 'all ConnectSphere features' : 'verification benefits' }}. 
+          Your badge is active across all sections.
+        </p>
+        <div class="benefits-list">
+          <div class="benefit" *ngIf="isPremiumMember">✨ Unlimited Content Access</div>
+          <div class="benefit" *ngIf="isPremiumMember">🚀 Priority Feed Placement</div>
+          <div class="benefit">🛡️ Trusted Badge Security</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Official Subscription Cards -->
+    <div class="subscription-card" *ngFor="let sub of subscriptions">
+      <div class="card-header">
+        <div class="plan-badge">{{ sub.planCode }}</div>
+        <div class="auto-status" [class.on]="sub.autoRenew">
+          {{ sub.autoRenew ? 'Auto-renewing' : 'Manual Renewal' }}
+        </div>
+      </div>
+      
+      <div class="card-body">
+        <div class="detail-row">
+          <span class="label">Status</span>
+          <span class="value status-pill" [class]="sub.status.toLowerCase()">{{ sub.status }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Expires</span>
+          <span class="value">{{ sub.expiresAt | date:'longDate' }}</span>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <button class="btn-primary" (click)="renew(sub)" [disabled]="loading">Renew Now</button>
+        <div class="secondary-actions">
+          <button class="btn-ghost" (click)="toggleAutoRenew(sub)" [disabled]="loading">
+            {{ sub.autoRenew ? 'Disable Auto' : 'Enable Auto' }}
+          </button>
+          <button class="btn-ghost danger" (click)="cancel(sub)" [disabled]="loading">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="subscriptions.length === 0 && !isPremiumMember && !isVerified">
+      <div class="empty-icon">💳</div>
+      <h3>No Active Plans</h3>
+      <p>Discover our Premium features and Verified Badges to level up your profile.</p>
+      <button class="btn-primary" routerLink="/premium">Explore Plans</button>
+    </div>
+  </div>
+</div>

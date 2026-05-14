@@ -1,0 +1,416 @@
+<div class="profile-page">
+  <div class="toast-inline success" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="toast-inline error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <section class="profile-hero">
+    <div class="profile-avatar-large">
+      <button
+        class="avatar-ring compact profile-story-avatar"
+        [class.has-story]="hasMyStories"
+        type="button"
+        [class.story-clickable]="hasMyStories"
+        (click)="openMyStories()"
+        [disabled]="!hasMyStories"
+        [attr.aria-label]="hasMyStories ? 'Open your stories' : null"
+      >
+        <img *ngIf="profilePicUrl" [src]="profilePicUrl" class="avatar-photo" alt="Profile photo" style="border: 2px solid white;" />
+        <div *ngIf="!profilePicUrl" class="avatar-inner" style="border: 2px solid white;">{{ getInitial() }}</div>
+      </button>
+    </div>
+
+    <div class="profile-info">
+      <div class="profile-name-row">
+        <div class="profile-heading">
+          <h1 class="profile-username">{{ username }}</h1>
+          <span class="verified-badge" *ngIf="isVerified">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            Verified
+          </span>
+          <span class="verified-badge premium" *ngIf="isPremiumMember">
+            <svg viewBox="0 0 24 24"><path d="M12.14 6.1L5.84 10 12.14 13.9 18.44 10 12.14 6.1M12.14 2L21.84 8 12.14 14 2.44 8 12.14 2M12.14 18.23L5.84 14.33 12.14 10.43 18.44 14.33 12.14 18.23M12.14 22L2.44 16 12.14 10 21.84 16 12.14 22Z"/></svg>
+            Premium
+          </span>
+        </div>
+
+        <div class="profile-toolbar">
+          <button class="btn-edit" type="button" (click)="showEditModal = true">Edit profile</button>
+          <button class="btn-settings" type="button" (click)="showPasswordModal = true">Password</button>
+        </div>
+      </div>
+
+      <p class="profile-quote">&ldquo;Share a little, connect a little, and let your people feel close.&rdquo;</p>
+
+      <div class="profile-stats-row">
+        <div class="profile-stat">
+          <strong>{{ totalPosts ?? '--' }}</strong>
+          <span>posts</span>
+        </div>
+        <button class="profile-stat stat-clickable" type="button" (click)="openFollowModal('followers')">
+          <strong>{{ followerCount ?? '--' }}</strong>
+          <span>followers</span>
+        </button>
+        <button class="profile-stat stat-clickable" type="button" (click)="openFollowModal('following')">
+          <strong>{{ followingCount ?? '--' }}</strong>
+          <span>following</span>
+        </button>
+      </div>
+
+      <div class="profile-bio-card">
+        <div class="bio-name">{{ fullName || username }}</div>
+        <p class="bio-text">{{ bio || 'Tell your story. Let people know what makes you unique.' }}</p>
+        <div class="bio-role">
+          <span class="role-badge">{{ role }}</span>
+          <span class="role-note">Searchable profile with stronger account security</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="profile-stories-section">
+    <div class="profile-stories-strip">
+      <a class="story-chip story-chip-add" routerLink="/stories" title="Add story">
+        <div class="story-chip-ring">
+          <div class="story-chip-avatar">+</div>
+        </div>
+        <span class="story-chip-name">Add</span>
+      </a>
+
+      <button
+        class="story-chip"
+        type="button"
+        *ngFor="let story of storyUsers"
+        (click)="openStoryViewerForUser(story.userEmail)"
+        [title]="getStoryDisplayName(story)"
+      >
+        <div class="story-chip-ring has-story">
+          <div class="story-chip-avatar" style="border: 2px solid white; background: #fff;">
+            {{ getStoryInitial(story) }}
+          </div>
+        </div>
+        <span class="story-chip-name">{{ getStoryDisplayName(story) | slice:0:10 }}</span>
+      </button>
+    </div>
+  </section>
+
+  <div class="profile-tabs">
+    <button [class.active]="activeTab === 'posts'" (click)="activeTab = 'posts'">Posts</button>
+    <button [class.active]="activeTab === 'reels'" (click)="activeTab = 'reels'">Reels</button>
+    <button [class.active]="activeTab === 'saved'" (click)="activeTab = 'saved'">Saved</button>
+  </div>
+
+  <div class="post-grid" *ngIf="activeTab === 'posts'">
+    <div class="grid-item" *ngFor="let post of myPosts">
+      <div class="grid-media" (click)="openPost(post)">
+        <img *ngIf="post.mediaUrls.length; else textFallback" [src]="post.mediaUrls[0]" class="grid-photo" alt="Post preview" />
+        <ng-template #textFallback>
+          <div class="grid-thumb">{{ post.title.charAt(0) || 'P' }}</div>
+        </ng-template>
+        <div class="grid-count-badge" *ngIf="(post.mediaUrls || []).length > 1">{{ post.mediaUrls.length }}</div>
+      </div>
+
+      <div class="grid-engagement">
+        <div class="grid-action-row">
+          <button class="icon-action-btn" type="button" [class.active]="isPostLiked(post)" (click)="togglePostLike(post, $event)" aria-label="Like post">
+            <svg *ngIf="!isPostLiked(post)" class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12.1 20.3l-1.1-1C6 14.8 3 12.1 3 8.8 3 6.2 5 4.2 7.6 4.2c1.5 0 3 .7 3.9 1.9.9-1.2 2.4-1.9 3.9-1.9C18 4.2 20 6.2 20 8.8c0 3.3-3 6-8 10.5l-.9 1z"></path>
+            </svg>
+            <svg *ngIf="isPostLiked(post)" class="action-icon filled" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12.1 21.1l-1.1-1C5.5 15 2 11.9 2 8.3 2 5.4 4.3 3 7.3 3c1.8 0 3.6.9 4.7 2.2C13.1 3.9 14.9 3 16.7 3 19.7 3 22 5.4 22 8.3c0 3.6-3.5 6.7-9 11.8l-.9 1z"></path>
+            </svg>
+          </button>
+          <button class="icon-action-btn" type="button" (click)="openCommentsModal(post, $event)" aria-label="View comments">
+            <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 4h16v11H8l-4 4V4z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="grid-counts">
+          <span>{{ post.likeCount || 0 }} likes</span>
+          <span>{{ post.commentCount || 0 }} comments</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-empty" *ngIf="myPosts.length === 0">
+      <div class="empty-icon">CS</div>
+      <h3>Share Your First Post</h3>
+      <p>Your profile is waiting for its first post.</p>
+      <a routerLink="/posts" class="share-link">Share Your First Post</a>
+    </div>
+  </div>
+
+  <div class="post-grid" *ngIf="activeTab === 'reels'">
+    <div class="grid-item reel-grid-item" *ngFor="let reel of myReels">
+      <div class="grid-media" (click)="openReelInFeed(reel)">
+        <video
+          [src]="reel.mediaUrl"
+          class="grid-photo reel-preview"
+          muted
+          playsinline
+          preload="metadata"
+        ></video>
+        <div class="reel-play-icon">▶</div>
+        <!-- Visibility Badge -->
+        <div class="reel-visibility-badge" *ngIf="reel.visibility">{{ reel.visibility }}</div>
+      </div>
+    </div>
+
+    <div class="grid-empty" *ngIf="myReels.length === 0">
+      <div class="empty-icon">RE</div>
+      <h3>Share Reels</h3>
+      <p>Create and share your reels here.</p>
+      <a routerLink="/reels" class="share-link">Go to Reels to upload</a>
+    </div>
+  </div>
+
+  <div class="post-grid" *ngIf="activeTab === 'saved'">
+    <div class="grid-empty">
+      <div class="empty-icon">SV</div>
+      <h3>Saved</h3>
+      <p>Save photos and videos that you want to revisit later.</p>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showEditModal" (click)="showEditModal = false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Edit Profile</h2>
+        <button class="modal-close" type="button" (click)="showEditModal = false">x</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="profile-image-editor">
+          <div class="profile-image-preview">
+            <img *ngIf="profileImagePreview" [src]="profileImagePreview" alt="Profile preview" />
+            <div *ngIf="!profileImagePreview" class="profile-image-fallback">{{ getInitial() }}</div>
+          </div>
+
+          <div class="profile-image-actions">
+            <input
+              type="file"
+              #profilePicInput
+              [accept]="profilePictureAccept"
+              (change)="onProfileImageSelected($event)"
+              style="display: none"
+            />
+            <button class="btn-secondary-light" type="button" (click)="profilePicInput.click()">Upload photo</button>
+            <button class="btn-secondary-light danger-light" type="button" *ngIf="profileImagePreview" (click)="removeProfilePicture()">
+              Remove photo
+            </button>
+            <p>JPEG, PNG, or WebP up to 5MB.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" [(ngModel)]="fullName" placeholder="Your full name" />
+        </div>
+
+        <div class="form-group">
+          <label>Bio</label>
+          <textarea [(ngModel)]="bio" placeholder="Write a short bio..." rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Profile Picture URL</label>
+          <input type="text" [(ngModel)]="profilePicUrl" placeholder="https://... or use upload above" />
+        </div>
+
+        <button class="btn-submit" type="button" (click)="updateProfile()" [disabled]="loading">
+          {{ loading ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showPasswordModal" (click)="showPasswordModal = false">
+    <div class="modal-content password-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Change Password</h2>
+        <button class="modal-close" type="button" (click)="showPasswordModal = false">x</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Current Password</label>
+          <input type="password" [(ngModel)]="currentPassword" placeholder="Current password" />
+        </div>
+
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" [(ngModel)]="newPassword" placeholder="Use one uppercase, one number, one special character" />
+        </div>
+
+        <button class="btn-submit" type="button" (click)="changePassword()" [disabled]="loading">
+          {{ loading ? 'Changing...' : 'Change Password' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showCommentsModal && commentsModalPost" (click)="closeCommentsModal()">
+    <div class="comments-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Comments</h2>
+        <button class="modal-close" type="button" (click)="closeCommentsModal()">x</button>
+      </div>
+
+      <div class="comments-modal-body">
+        <div class="comments-feed" *ngIf="!loadingComments; else loadingCommentsState">
+          <div class="comment-row" *ngFor="let comment of postComments">
+            <span class="comment-author">
+              {{ getCommentAuthor(comment) }}
+              <span class="inline-badge verified" *ngIf="isVerifiedUser(comment.userEmail)">Verified</span>
+              <span class="inline-badge premium" *ngIf="isPremiumUser(comment.userEmail)">Premium</span>
+            </span>
+            <span class="comment-text">{{ comment.content }}</span>
+          </div>
+          <div class="comments-empty" *ngIf="!postComments.length">No comments yet.</div>
+        </div>
+        <ng-template #loadingCommentsState>
+          <div class="comments-empty">Loading comments...</div>
+        </ng-template>
+
+        <div class="comment-emoji-row">
+          <button
+            type="button"
+            class="emoji-chip"
+            *ngFor="let emoji of quickCommentEmojis"
+            (click)="addEmojiToComment(emoji)"
+            [attr.aria-label]="'Add emoji ' + emoji"
+          >
+            {{ emoji }}
+          </button>
+        </div>
+
+        <div class="comment-composer">
+          <input
+            type="text"
+            [(ngModel)]="newCommentText"
+            placeholder="Add a comment..."
+            (keyup.enter)="addCommentToSelectedPost()"
+          />
+          <button type="button" (click)="addCommentToSelectedPost()" [disabled]="postingComment || !newCommentText.trim()">
+            {{ postingComment ? 'Posting...' : 'Post' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showFollowModal" (click)="closeFollowModal()">
+    <div class="follow-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ followModalTab === 'followers' ? 'Followers' : 'Following' }}</h2>
+        <button class="modal-close" type="button" (click)="closeFollowModal()">x</button>
+      </div>
+
+      <div class="follow-modal-body">
+        <div class="follow-modal-tabs">
+          <button type="button" class="active" *ngIf="followModalTab === 'followers'">
+            Followers ({{ followersList.length }})
+          </button>
+          <button type="button" class="active" *ngIf="followModalTab === 'following'">
+            Following ({{ followingList.length }})
+          </button>
+        </div>
+
+        <input
+          class="follow-search-input"
+          type="text"
+          [(ngModel)]="followSearchTerm"
+          placeholder="Search people..."
+        />
+
+        <div class="follow-modal-list" *ngIf="!loadingFollowModal; else followLoading">
+          <ng-container *ngIf="followModalTab === 'followers'">
+            <div class="follow-row" *ngFor="let followItem of filteredFollowers">
+              <img
+                *ngIf="getFollowProfilePhoto(getFollowerEmail(followItem))"
+                [src]="getFollowProfilePhoto(getFollowerEmail(followItem))"
+                class="follow-row-avatar-img"
+                alt=""
+              />
+              <div
+                *ngIf="!getFollowProfilePhoto(getFollowerEmail(followItem))"
+                class="follow-row-avatar"
+              >
+                {{ getFollowInitial(getFollowerEmail(followItem)) }}
+              </div>
+              <div class="follow-row-copy">
+                <div class="follow-row-name">
+                  {{ getFollowDisplayName(getFollowerEmail(followItem)) }}
+                </div>
+                <div class="follow-row-handle">
+                  {{ getFollowHandle(getFollowerEmail(followItem)) }}
+                </div>
+              </div>
+            </div>
+
+            <div class="follow-empty" *ngIf="filteredFollowers.length === 0">
+              No followers found.
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="followModalTab === 'following'">
+            <div class="follow-row" *ngFor="let followItem of filteredFollowing">
+              <img
+                *ngIf="getFollowProfilePhoto(getFollowingEmail(followItem))"
+                [src]="getFollowProfilePhoto(getFollowingEmail(followItem))"
+                class="follow-row-avatar-img"
+                alt=""
+              />
+              <div
+                *ngIf="!getFollowProfilePhoto(getFollowingEmail(followItem))"
+                class="follow-row-avatar"
+              >
+                {{ getFollowInitial(getFollowingEmail(followItem)) }}
+              </div>
+              <div class="follow-row-copy">
+                <div class="follow-row-name">
+                  {{ getFollowDisplayName(getFollowingEmail(followItem)) }}
+                </div>
+                <div class="follow-row-handle">
+                  {{ getFollowHandle(getFollowingEmail(followItem)) }}
+                </div>
+              </div>
+            </div>
+
+            <div class="follow-empty" *ngIf="filteredFollowing.length === 0">
+              No following found.
+            </div>
+          </ng-container>
+        </div>
+        <ng-template #followLoading>
+          <div class="follow-empty">Loading...</div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <app-post-detail-modal
+    *ngIf="selectedPost"
+    [post]="selectedPost"
+    [username]="username"
+    [displayName]="fullName || username"
+    [profilePicUrl]="profilePicUrl"
+    [currentUserEmail]="email"
+    [isLoggedIn]="true"
+    [canDeletePost]="true"
+    [isAuthorVerified]="isVerified"
+    [isAuthorPremium]="isPremiumMember"
+    (closed)="closePost()"
+    (postDeleted)="handlePostDeleted($event)"
+  ></app-post-detail-modal>
+
+  <app-story-viewer
+    *ngIf="isStoryViewerOpen"
+    [stories]="viewerStories"
+    [currentIndex]="viewerCurrentIndex"
+    [currentUserEmail]="email"
+    [allowDelete]="true"
+    (storyChanged)="markStoryViewed($event)"
+    (deleteRequested)="deleteStoryFromViewer($event)"
+    (closed)="closeStoryViewer()"
+  ></app-story-viewer>
+</div>

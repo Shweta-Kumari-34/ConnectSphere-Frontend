@@ -1,0 +1,245 @@
+<div class="explore-page">
+
+  <!-- ═══════ HERO SECTION ═══════ -->
+  <div class="explore-hero" *ngIf="!authService.isLoggedIn()">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        Explore
+      </div>
+      <h1>ConnectSphere</h1>
+      <p class="hero-subtitle">Discover people, posts, and trending topics in one clean social space.</p>
+      <p class="hero-quote">&ldquo;Discover voices, ideas, and moments worth following.&rdquo;</p>
+
+      <!-- Content Previews -->
+      <div class="hero-content-preview">
+        <div class="preview-card" *ngIf="trendingHashtags.length > 0">
+          <div class="preview-icon fire">🔥</div>
+          <div class="preview-info">
+            <span class="preview-label">Trending Now</span>
+            <span class="preview-value">#{{ trendingHashtags[0].tag || trendingHashtags[0] }}</span>
+          </div>
+        </div>
+        <div class="preview-card" *ngIf="publicPosts.length > 0">
+          <div class="preview-icon post">📝</div>
+          <div class="preview-info">
+            <span class="preview-label">Featured Post</span>
+            <span class="preview-value">"{{ (publicPosts[0].title || publicPosts[0].content) | slice:0:20 }}..."</span>
+          </div>
+        </div>
+        <div class="preview-card">
+          <div class="preview-icon globe">🌍</div>
+          <div class="preview-info">
+            <span class="preview-label">Community</span>
+            <span class="preview-value">Public Network</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-actions-single">
+        <button class="btn-primary btn-lg get-started-btn" type="button" (click)="goToRegister()">Get Started</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ AUTHENTICATED HEADER ═══════ -->
+  <div class="explore-auth-header" *ngIf="authService.isLoggedIn()">
+    <div class="auth-header-text">
+      <h1>Explore</h1>
+      <p>Discover people, posts, and trending topics in one clean social space.</p>
+    </div>
+    <button class="btn-primary" type="button" (click)="goToSearch()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Search
+    </button>
+  </div>
+
+  <!-- ═══════ SECTION A: TRENDING HASHTAGS ═══════ -->
+  <div class="explore-section" *ngIf="!searched && trendingHashtags.length > 0">
+    <div class="section-header">
+      <div>
+        <h2>🔥 Trending Now</h2>
+        <p>Jump into topics people are already talking about.</p>
+      </div>
+    </div>
+    <div class="trending-grid">
+      <div class="trending-card" *ngFor="let t of trendingHashtags; let i = index" (click)="searchByTag(t.tag || t)">
+        <div class="trending-rank" [class.top3]="i < 3">{{ i + 1 }}</div>
+        <div class="trending-info">
+          <div class="trending-tag">#{{ t.tag || t }}</div>
+          <div class="trending-count" *ngIf="t.count">{{ t.count }} posts</div>
+        </div>
+        <span class="trending-arrow">›</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ SECTION B: SUGGESTED USERS ═══════ -->
+  <div class="explore-section" *ngIf="!searched && authService.isLoggedIn() && suggestedUsers.length > 0">
+    <div class="section-header">
+      <div>
+        <h2>👥 People You May Know</h2>
+        <p>Suggested for you based on your network.</p>
+      </div>
+    </div>
+    <div class="suggested-users-grid">
+      <div class="suggested-user-card" *ngFor="let u of suggestedUsers">
+        <div class="su-avatar" (click)="viewProfile(u)">
+          <img *ngIf="u.profilePicUrl" [src]="u.profilePicUrl" alt="" class="su-avatar-img" />
+          <span *ngIf="!u.profilePicUrl" class="su-avatar-letter">{{ getInitial(u.username) }}</span>
+        </div>
+        <div class="su-info" (click)="viewProfile(u)">
+          <div class="su-username">
+            {{ u.username }}
+            <span class="su-badge verified" *ngIf="u.isVerified">✓</span>
+            <span class="su-badge premium" *ngIf="u.isPremiumMember">★</span>
+          </div>
+          <div class="su-fullname">{{ u.fullName || 'Suggested for you' }}</div>
+        </div>
+        <button class="follow-btn" *ngIf="!isMe(u.email)"
+                [class.following]="u.isFollowing"
+                (click)="toggleFollow(u)">
+          {{ u.isFollowing ? 'Following' : 'Follow' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ SECTION C: CATEGORIES ═══════ -->
+  <div class="explore-section" *ngIf="!searched">
+    <div class="section-header">
+      <div>
+        <h2>📂 Browse Categories</h2>
+        <p>Explore content by topic.</p>
+      </div>
+    </div>
+    <div class="categories-grid">
+      <div class="category-card" *ngFor="let cat of categories" (click)="searchByCategory(cat.tag)"
+           [style.--cat-color]="cat.color">
+        <span class="category-icon">{{ cat.icon }}</span>
+        <span class="category-label">{{ cat.label }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ SECTION D: PUBLIC FEED ═══════ -->
+  <div class="explore-section" *ngIf="!searched">
+    <div class="section-header">
+      <div>
+        <h2>✨ Public Feed</h2>
+        <p>{{ authService.isLoggedIn() ? 'Discover popular public content.' : 'Browse public updates before signing in.' }}</p>
+      </div>
+    </div>
+
+    <!-- Skeleton Loading -->
+    <div class="public-feed-grid" *ngIf="loading">
+      <div class="public-post-card skeleton-card" *ngFor="let s of [1,2,3,4,5,6]">
+        <div class="skeleton skeleton-text long"></div>
+        <div class="skeleton skeleton-text medium"></div>
+        <div class="skeleton skeleton-text short"></div>
+      </div>
+    </div>
+
+    <div class="public-feed-grid" *ngIf="!loading">
+      <div class="public-post-card" *ngFor="let post of publicPosts">
+        <div class="ppc-header">
+          <div class="ppc-avatar" (click)="viewProfile({email: post.userEmail, username: post.userEmail.split('@')[0]})">
+            {{ post.userEmail.charAt(0).toUpperCase() }}
+          </div>
+          <div class="ppc-meta">
+            <span class="ppc-author" (click)="viewProfile({email: post.userEmail, username: post.userEmail.split('@')[0]})">
+              {{ post.userEmail.split('@')[0] }}
+            </span>
+            <span class="ppc-time">{{ getTimeAgo(post.createdAt) }}</span>
+          </div>
+        </div>
+
+        <h3 class="ppc-title" *ngIf="post.title">{{ post.title }}</h3>
+        <p class="ppc-content" *ngIf="post.content">{{ post.content | slice:0:150 }}{{ post.content?.length > 150 ? '...' : '' }}</p>
+
+        <div class="ppc-stats">
+          <span>❤️ {{ post.likeCount || 0 }}</span>
+          <span>💬 {{ post.commentCount || 0 }}</span>
+        </div>
+
+        <div class="ppc-actions">
+          <button class="ppc-action-btn" *ngIf="!authService.isLoggedIn()" (click)="goToLogin()">Sign in to interact</button>
+          <div class="ppc-action-row" *ngIf="authService.isLoggedIn()">
+            <button class="ppc-interact" (click)="likePost(post)">❤️ Like</button>
+            <button class="ppc-interact" (click)="commentPost(post)">💬 Comment</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="publicPosts.length === 0 && !loading">
+      <div class="empty-icon">📭</div>
+      <p>No public posts available yet.<br/>Be the first to share something!</p>
+    </div>
+  </div>
+
+  <!-- ═══════ SEARCH RESULTS ═══════ -->
+  <div class="explore-section" *ngIf="searched">
+    <div class="result-tabs">
+      <button [class.active]="activeTab === 'posts'" (click)="activeTab = 'posts'">Posts ({{ searchResults.length }})</button>
+      <button [class.active]="activeTab === 'users'" (click)="activeTab = 'users'">Users ({{ userResults.length }})</button>
+      <button [class.active]="activeTab === 'hashtags'" (click)="activeTab = 'hashtags'">Hashtags ({{ hashtagResults.length }})</button>
+    </div>
+
+    <div *ngIf="activeTab === 'users'" class="result-list">
+      <div class="user-result" *ngFor="let u of userResults" (click)="viewProfile(u)">
+        <div class="user-result-avatar">{{ (u.username || u.email).charAt(0).toUpperCase() }}</div>
+        <div class="user-result-info">
+          <div class="user-result-name">{{ u.username || u.email.split('@')[0] }}</div>
+          <div class="user-result-email">{{ u.email }}</div>
+        </div>
+        <span class="view-profile-btn">View Profile →</span>
+      </div>
+      <div class="empty-state" *ngIf="userResults.length === 0">
+        <p>No users found for "<strong>{{ searchQuery }}</strong>"</p>
+      </div>
+    </div>
+
+    <div *ngIf="activeTab === 'posts'" class="result-list">
+      <div class="post-result" *ngFor="let p of searchResults">
+        <div class="post-result-thumb">{{ p.title?.charAt(0) || 'P' }}</div>
+        <div class="post-result-info">
+          <div class="post-result-title">{{ p.title }}</div>
+          <div class="post-result-meta">by {{ (p.userEmail || '').split('@')[0] }} · {{ getTimeAgo(p.createdAt) }} · {{ p.likeCount || 0 }} likes</div>
+          <div class="post-result-content">{{ p.content | slice:0:120 }}{{ p.content?.length > 120 ? '...' : '' }}</div>
+        </div>
+      </div>
+      <div class="empty-state" *ngIf="searchResults.length === 0">
+        <p>No public posts found for "<strong>{{ searchQuery }}</strong>"</p>
+      </div>
+    </div>
+
+    <div *ngIf="activeTab === 'hashtags'" class="result-list">
+      <div class="hashtag-result" *ngFor="let h of hashtagResults" (click)="searchByTag(h.tag)">
+        <span class="tag-hash">#</span>
+        <span>{{ h.tag }}</span>
+        <span class="hashtag-arrow">›</span>
+      </div>
+      <div class="empty-state" *ngIf="hashtagResults.length === 0">
+        <p>No hashtags found for "<strong>{{ searchQuery }}</strong>"</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<app-post-detail-modal
+  *ngIf="selectedPost"
+  [post]="selectedPost"
+  [username]="(selectedPost.userEmail || 'user').split('@')[0]"
+  [displayName]="(selectedPost.userEmail || 'user').split('@')[0]"
+  [profilePicUrl]="''"
+  [currentUserEmail]="authService.getEmail() || ''"
+  [isLoggedIn]="authService.isLoggedIn()"
+  [canDeletePost]="(selectedPost.userEmail || '') === (authService.getEmail() || '')"
+  [isAuthorVerified]="false"
+  [isAuthorPremium]="false"
+  (closed)="closePostModal()"
+  (postDeleted)="closePostModal()"
+  (loginRequested)="goToLogin()"
+></app-post-detail-modal>

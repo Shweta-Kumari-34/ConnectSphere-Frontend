@@ -1,0 +1,414 @@
+<div class="search-page">
+  <div class="search-header">
+    <span class="search-badge">Search</span>
+    <h2 class="search-title">Find people, topics, and moments worth following.</h2>
+    <p class="search-quote">&ldquo;The next connection could be one search away.&rdquo;</p>
+
+    <div class="search-bar-container">
+      <div class="search-input-wrapper" [class.focused]="searchFocused">
+        <svg class="search-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" [ngModel]="searchQuery"
+               (ngModelChange)="onSearchInput($event)"
+               (keyup.enter)="search()"
+               (focus)="searchFocused = true"
+               (blur)="searchFocused = false; hideSuggestions()"
+               placeholder="Search people, tags, or posts"
+               id="search-input" />
+        <button class="search-clear-btn" *ngIf="searchQuery" (click)="clearSearch()">&times;</button>
+      </div>
+      <button class="search-action-btn" *ngIf="searched" (click)="clearSearch()">Clear</button>
+    </div>
+
+    <div class="suggestions-dropdown" *ngIf="showSuggestions && !searched">
+      <div class="suggestion-loading" *ngIf="suggestionsLoading">
+        <div class="spinner-small"></div>
+        <span>Searching...</span>
+      </div>
+      <div class="suggestion-item" *ngFor="let u of suggestions" (mousedown)="selectSuggestion(u)">
+        <div class="suggestion-avatar-wrapper">
+          <img *ngIf="u.profilePicUrl" [src]="u.profilePicUrl" class="suggestion-avatar-img" alt="" />
+          <div *ngIf="!u.profilePicUrl" class="suggestion-avatar">{{ getInitial(u.username) }}</div>
+        </div>
+        <div class="suggestion-info">
+          <div class="suggestion-username">
+            {{ u.username }}
+            <span class="badge verified" *ngIf="u.isVerified">Verified</span>
+            <span class="badge premium" *ngIf="u.isPremiumMember">Premium</span>
+          </div>
+          <div class="suggestion-fullname" *ngIf="u.fullName">{{ u.fullName }}</div>
+          <div class="suggestion-fullname" *ngIf="!u.fullName">{{ u.email }}</div>
+        </div>
+      </div>
+      <div class="suggestion-empty" *ngIf="!suggestionsLoading && suggestions.length === 0">
+        <span>No results found</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="guest-banner" *ngIf="!authService.isLoggedIn() && !searched">
+    <div class="guest-banner-content">
+      <h2>Welcome to ConnectSphere</h2>
+      <p>Search for people, topics, and trending content in a softer, more curated space.</p>
+      <div class="guest-actions">
+        <button class="btn-primary get-started-btn" (click)="goToRegister()">Get Started</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" *ngIf="!searched && recentSearches.length > 0">
+    <div class="section-header">
+      <h3>Recent Searches</h3>
+      <button class="clear-all-btn" (click)="clearAllRecent()">Clear all</button>
+    </div>
+    <div class="recent-list">
+      <div class="recent-item" *ngFor="let q of recentSearches">
+        <div class="recent-icon" (click)="searchQuery = q; search()">R</div>
+        <div class="recent-text" (click)="searchQuery = q; search()">
+          <span class="recent-query">{{ q }}</span>
+        </div>
+        <button class="recent-remove" (click)="removeRecentSearch(q)">&times;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" *ngIf="!searched && authService.isLoggedIn() && suggestedUsers.length > 0">
+    <div class="section-header">
+      <h3>Suggested for you</h3>
+    </div>
+    <div class="user-list">
+      <div class="user-card" *ngFor="let u of suggestedUsers">
+        <div class="user-avatar-wrapper" (click)="navigateToProfile(u.email)">
+          <img *ngIf="u.profilePicUrl" [src]="u.profilePicUrl" class="user-avatar-img" alt="" />
+          <div *ngIf="!u.profilePicUrl" class="user-avatar">{{ getInitial(u.username) }}</div>
+        </div>
+        <div class="user-details" (click)="navigateToProfile(u.email)">
+          <div class="user-username">
+            {{ u.username }}
+            <span class="badge verified" *ngIf="u.isVerified">Verified</span>
+            <span class="badge premium" *ngIf="u.isPremiumMember">Premium</span>
+          </div>
+          <div class="user-fullname" *ngIf="u.fullName">{{ u.fullName }}</div>
+          <div class="user-fullname" *ngIf="!u.fullName">Suggested for you</div>
+        </div>
+        <button class="follow-btn" *ngIf="!isMe(u.email)"
+                [class.following]="u.isFollowing"
+                (click)="toggleFollow(u)">
+          {{ u.isFollowing ? 'Following' : 'Follow' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" *ngIf="!searched && trending.length > 0">
+    <div class="section-header">
+      <h3>Trending</h3>
+    </div>
+    <div class="trending-grid">
+      <div class="trending-card" *ngFor="let t of trending; let i = index" (click)="searchByTag(t.tag)">
+        <div class="trending-rank">{{ i + 1 }}</div>
+        <div class="trending-info">
+          <div class="trending-tag">#{{ t.tag }}</div>
+          <div class="trending-count" *ngIf="t.count">{{ t.count }} posts</div>
+        </div>
+        <span class="trending-arrow">&rsaquo;</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" *ngIf="!searched && discoveryPosts.length > 0">
+    <div class="section-header">
+      <h3>Explore</h3>
+    </div>
+    <div class="discovery-grid">
+      <div class="discovery-item" *ngFor="let p of discoveryPosts"
+           [class.large]="discoveryPosts.indexOf(p) % 10 === 0"
+           (click)="navigateToProfile(p.userEmail)">
+        <div class="discovery-thumb">
+          <img *ngIf="p.mediaUrls && p.mediaUrls.length > 0" [src]="p.mediaUrls[0]" class="discovery-img" alt="" />
+          <span *ngIf="!p.mediaUrls || p.mediaUrls.length === 0" class="discovery-letter">{{ p.title.charAt(0) || 'P' }}</span>
+        </div>
+        <div class="discovery-overlay">
+          <div class="discovery-stats">
+            <span>❤️ {{ p.likeCount || 0 }}</span>
+            <span>💬 {{ p.commentCount || 0 }}</span>
+          </div>
+        </div>
+        <div class="discovery-bottom-bar">
+          <div class="discovery-author" (click)="$event.stopPropagation(); navigateToProfile(p.userEmail)">
+            <div class="discovery-author-avatar">{{ (p.userEmail || 'U').charAt(0).toUpperCase() }}</div>
+            <span class="discovery-author-name">{{ (p.userEmail || '').split('@')[0] }}</span>
+          </div>
+          <button class="discovery-follow-btn" *ngIf="authService.isLoggedIn() && !isMe(p.userEmail)" 
+                  (click)="$event.stopPropagation(); toggleFollowFromPost(p)">
+            {{ isFollowingUser(p.userEmail) ? 'Following' : 'Follow' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-tabs" *ngIf="searched">
+    <button [class.active]="activeTab === 'all'" (click)="activeTab = 'all'">
+      <span class="tab-icon">A</span> All
+    </button>
+    <button [class.active]="activeTab === 'users'" (click)="activeTab = 'users'">
+      <span class="tab-icon">U</span> Users
+      <span class="tab-count" *ngIf="userResults.length > 0">{{ userResults.length }}</span>
+    </button>
+    <button [class.active]="activeTab === 'posts'" (click)="activeTab = 'posts'">
+      <span class="tab-icon">P</span> Posts
+      <span class="tab-count" *ngIf="postResults.length > 0">{{ postResults.length }}</span>
+    </button>
+    <button [class.active]="activeTab === 'hashtags'" (click)="activeTab = 'hashtags'">
+      <span class="tab-icon">#</span> Tags
+      <span class="tab-count" *ngIf="hashtagResults.length > 0">{{ hashtagResults.length }}</span>
+    </button>
+    <button [class.active]="activeTab === 'reels'" (click)="activeTab = 'reels'">
+      <span class="tab-icon">▶</span> Reels
+      <span class="tab-count" *ngIf="reelResults.length > 0">{{ reelResults.length }}</span>
+    </button>
+  </div>
+
+  <div class="loading-state" *ngIf="searching">
+    <div class="spinner"></div>
+    <span>Searching...</span>
+  </div>
+
+  <div class="results" *ngIf="searched && !searching && activeTab === 'all'">
+    <!-- Top Users -->
+    <div class="section-header" *ngIf="userResults.length > 0">
+      <h3>Users</h3>
+      <button class="view-more-btn" (click)="activeTab = 'users'">See all</button>
+    </div>
+    <div class="user-list horizontal-scroll" *ngIf="userResults.length > 0">
+      <div class="user-card" *ngFor="let u of userResults.slice(0, 4)">
+        <div class="user-avatar-wrapper" (click)="navigateToProfile(u.email)">
+          <img *ngIf="u.profilePicUrl" [src]="u.profilePicUrl" class="user-avatar-img" alt="" />
+          <div *ngIf="!u.profilePicUrl" class="user-avatar">{{ getInitial(u.username) }}</div>
+        </div>
+        <div class="user-details" (click)="navigateToProfile(u.email)">
+          <div class="user-username">{{ u.username }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Posts -->
+    <div class="section-header" *ngIf="postResults.length > 0">
+      <h3>Posts</h3>
+      <button class="view-more-btn" (click)="activeTab = 'posts'">See all</button>
+    </div>
+    <div class="post-results-grid" *ngIf="postResults.length > 0">
+      <div class="post-grid-item" *ngFor="let p of postResults.slice(0, 3)" (click)="navigateToProfile(p.userEmail)">
+        <div class="post-grid-thumb">
+          <img *ngIf="p.mediaUrls && p.mediaUrls.length > 0" [src]="p.mediaUrls[0]" class="discovery-img" alt="" />
+          <span *ngIf="!p.mediaUrls || p.mediaUrls.length === 0" class="post-grid-fallback-text">{{ getPostHeading(p) }}</span>
+        </div>
+        <div class="post-grid-overlay">
+          <span>❤️ {{ p.likeCount || 0 }}</span>
+        </div>
+      </div>
+    </div>
+
+    
+    <!-- Top Reels -->
+    <div class="section-header" *ngIf="reelResults.length > 0">
+      <h3>Reels</h3>
+      <button class="view-more-btn" (click)="activeTab = 'reels'">See all</button>
+    </div>
+    <div class="post-results-grid" *ngIf="reelResults.length > 0">
+      <div class="post-grid-item" *ngFor="let r of reelResults.slice(0, 3)" (click)="openReelPreview(r)">
+        <div class="post-grid-thumb">
+          <video *ngIf="r.mediaUrl" [src]="r.mediaUrl + '#t=0.1'" class="discovery-img"></video>
+        </div>
+        <div class="post-grid-overlay">
+          <span>❤️ {{ r.likesCount || 0 }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Tags -->
+    <div class="section-header" *ngIf="hashtagResults.length > 0">
+      <h3>Tags</h3>
+      <button class="view-more-btn" (click)="activeTab = 'hashtags'">See all</button>
+    </div>
+    <div class="trending-grid" *ngIf="hashtagResults.length > 0">
+      <div class="trending-card" *ngFor="let h of hashtagResults.slice(0, 3)" (click)="searchByTag(h.tag)">
+        <div class="trending-info">
+          <div class="trending-tag">#{{ h.tag }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="userResults.length === 0 && postResults.length === 0 && hashtagResults.length === 0 && reelResults.length === 0">
+      <p>No results found for "<strong>{{ searchQuery }}</strong>"</p>
+    </div>
+  </div>
+
+  <div class="results" *ngIf="searched && !searching && activeTab === 'users'">
+    <div class="user-card rich" *ngFor="let u of userResults">
+      <div class="user-avatar-wrapper" (click)="navigateToProfile(u.email)">
+        <img *ngIf="u.profilePicUrl" [src]="u.profilePicUrl" class="user-avatar-img" alt="" />
+        <div *ngIf="!u.profilePicUrl" class="user-avatar">{{ getInitial(u.username) }}</div>
+      </div>
+      <div class="user-details" (click)="navigateToProfile(u.email)">
+        <div class="user-username">
+          {{ u.username }}
+          <span class="badge verified" *ngIf="u.isVerified">Verified</span>
+          <span class="badge premium" *ngIf="u.isPremiumMember">Premium</span>
+        </div>
+        <div class="user-fullname" *ngIf="u.fullName">{{ u.fullName }}</div>
+        <div class="user-meta" *ngIf="u.followerCount > 0">{{ u.followerCount }} followers</div>
+      </div>
+      <button class="follow-btn" *ngIf="!isMe(u.email) && authService.isLoggedIn()"
+              [class.following]="u.isFollowing"
+              (click)="toggleFollow(u)">
+        {{ u.isFollowing ? 'Following' : 'Follow' }}
+      </button>
+      <button class="follow-btn" *ngIf="!isMe(u.email) && !authService.isLoggedIn()"
+              (click)="goToLogin()">
+        Follow
+      </button>
+      <span class="you-badge" *ngIf="isMe(u.email)">You</span>
+    </div>
+    <div class="empty-state" *ngIf="userResults.length === 0">
+      <div class="empty-icon">S</div>
+      <p>No users found for "<strong>{{ searchQuery }}</strong>"</p>
+    </div>
+  </div>
+
+  <div class="results" *ngIf="searched && !searching && activeTab === 'posts'">
+
+
+    <div class="post-list" *ngIf="postResults.length > 0">
+      <div class="post-card" *ngFor="let p of postResults">
+        <div class="post-card-header">
+          <div class="post-card-avatar" (click)="navigateToProfile(p.userEmail)">
+            {{ (p.userEmail || 'U').charAt(0).toUpperCase() }}
+          </div>
+          <div class="post-card-meta">
+            <span class="post-card-author" (click)="navigateToProfile(p.userEmail)">
+              {{ (p.userEmail || '').split('@')[0] }}
+            </span>
+            <span class="post-card-time">{{ getTimeAgo(p.createdAt) }}</span>
+          </div>
+        </div>
+        <h4 class="post-card-title">{{ getPostHeading(p) }}</h4>
+        <p class="post-card-content">{{ getPostExcerpt(p.content, 200) }}</p>
+        <div class="post-card-stats">
+          <span>Likes {{ p.likeCount || 0 }}</span>
+          <span>Comments {{ p.commentCount || 0 }}</span>
+        </div>
+        <div class="post-card-cta" *ngIf="!authService.isLoggedIn()">
+          <button class="btn-login-cta" (click)="goToLogin()">Log in to like and comment</button>
+        </div>
+        <div class="post-card-cta" *ngIf="authService.isLoggedIn()">
+          <div class="post-interact-row">
+            <button class="interact-btn" (click)="likePost(p)">❤️ Like</button>
+            <button class="interact-btn" (click)="commentPost(p)">💬 Comment</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="empty-state" *ngIf="postResults.length === 0">
+      <div class="empty-icon">P</div>
+      <p>No public posts found for "<strong>{{ searchQuery }}</strong>"</p>
+    </div>
+  </div>
+
+  <div class="results" *ngIf="searched && !searching && activeTab === 'hashtags'">
+    <div class="hashtag-detail" *ngIf="viewingHashtag">
+      <div class="hashtag-detail-header">
+        <div class="hashtag-icon-large">#</div>
+        <div class="hashtag-detail-info">
+          <h2>{{ viewingHashtag }}</h2>
+          <p>{{ hashtagPosts.length }} public posts</p>
+        </div>
+      </div>
+      <div class="hashtag-posts-grid">
+        <div class="post-grid-item" *ngFor="let p of hashtagPosts" (click)="navigateToProfile(p.userEmail)">
+          <div class="post-grid-thumb">
+            <img *ngIf="p.mediaUrls && p.mediaUrls.length > 0" [src]="p.mediaUrls[0]" class="discovery-img" alt="" />
+            <span *ngIf="!p.mediaUrls || p.mediaUrls.length === 0" class="post-grid-fallback-text">{{ getPostHeading(p) }}</span>
+          </div>
+          <div class="post-grid-overlay">
+            <span>Likes {{ p.likeCount || 0 }}</span>
+            <span>Comments {{ p.commentCount || 0 }}</span>
+          </div>
+        </div>
+      </div>
+      <h3 *ngIf="hashtagReels.length > 0" style="margin-top:24px; font-size:18px; font-weight:700;">Reels for #{{ viewingHashtag }}</h3>
+      <div class="post-results-grid" *ngIf="hashtagReels.length > 0" style="margin-top:12px;">
+        <div class="post-grid-item" *ngFor="let r of hashtagReels" (click)="openReelPreview(r)">
+          <div class="post-grid-thumb">
+            <video *ngIf="r.mediaUrl" [src]="r.mediaUrl + '#t=0.1'" class="discovery-img"></video>
+          </div>
+          <div class="post-grid-overlay">
+            <span>❤️ {{ r.likesCount || 0 }}</span>
+            <span>👁️ {{ r.viewsCount || 0 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="hashtagPosts.length === 0 && hashtagReels.length === 0">
+        <p>No public posts with this hashtag</p>
+      </div>
+    </div>
+
+    <div class="hashtag-list" *ngIf="!viewingHashtag">
+      <div class="hashtag-card" *ngFor="let h of hashtagResults" (click)="searchByTag(h.tag)">
+        <div class="hashtag-icon">#</div>
+        <div class="hashtag-info">
+          <div class="hashtag-tag">{{ h.tag }}</div>
+        </div>
+        <span class="hashtag-arrow">&rsaquo;</span>
+      </div>
+    </div>
+    <div class="empty-state" *ngIf="hashtagResults.length === 0 && !viewingHashtag">
+      <div class="empty-icon">#</div>
+      <p>No hashtags found for "<strong>{{ searchQuery }}</strong>"</p>
+    </div>
+  </div>
+
+  <div class="results" *ngIf="searched && !searching && activeTab === 'reels'">
+    <div class="post-results-grid" *ngIf="reelResults.length > 0">
+      <div class="post-grid-item" *ngFor="let r of reelResults" (click)="openReelPreview(r)">
+        <div class="post-grid-thumb">
+          <video *ngIf="r.mediaUrl" [src]="r.mediaUrl" class="discovery-img"></video>
+        </div>
+        <div class="post-grid-overlay">
+          <span>❤️ {{ r.likesCount || 0 }}</span>
+          <span>👁️ {{ r.viewsCount || 0 }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="empty-state" *ngIf="reelResults.length === 0">
+      <div class="empty-icon">▶</div>
+      <p>No reels found for "<strong>{{ searchQuery }}</strong>"</p>
+    </div>
+  </div>
+
+  <!-- Reel Preview Modal -->
+  <div class="reel-modal-overlay" *ngIf="previewReel" (click)="closeReelPreview()">
+    <div class="reel-modal-content" (click)="$event.stopPropagation()">
+      <button class="reel-modal-close" (click)="closeReelPreview()">&times;</button>
+      <video [src]="previewReel.mediaUrl" autoplay controls loop class="reel-modal-video"></video>
+      <div class="reel-modal-info">
+        <div class="reel-modal-author">@{{ previewReel.userEmail.split('@')[0] }}</div>
+        <p class="reel-modal-caption">{{ previewReel.caption }}</p>
+        <div class="reel-modal-stats">
+          <span>❤️ {{ previewReel.likesCount || 0 }}</span>
+          <span>👁️ {{ previewReel.viewsCount || 0 }}</span>
+        </div>
+        <div class="reel-modal-cta" *ngIf="!authService.isLoggedIn()">
+           <button class="btn-primary" (click)="goToLogin()">Log in to interact</button>
+        </div>
+        <div class="reel-modal-cta" *ngIf="authService.isLoggedIn()">
+           <button class="btn-primary" (click)="navigateToReels(previewReel.id)">Watch in Reels</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

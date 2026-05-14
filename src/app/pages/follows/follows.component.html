@@ -1,0 +1,111 @@
+<div class="page-container follow-page">
+  <div class="page-header">
+    <h1>Follows</h1>
+    <p>Manage who you follow and see who is following you.</p>
+    <p class="follow-quote">&ldquo;Connections grow one interaction at a time.&rdquo;</p>
+  </div>
+
+  <div class="success-message" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <div class="card follow-form-card">
+    <h3>Follow a User</h3>
+    <form (ngSubmit)="searchUsers()" class="form-inline">
+      <div class="form-group">
+        <input
+          type="text"
+          [(ngModel)]="userSearchTerm"
+          (ngModelChange)="onUserSearchInput()"
+          name="userSearchTerm"
+          placeholder="Search by email or username"
+          class="form-input"
+        />
+      </div>
+      <button type="submit" class="btn-primary">Search</button>
+    </form>
+
+    <div class="search-result-wrap" *ngIf="userSearchTerm.trim()">
+      <div class="search-feedback" *ngIf="searchingUsers">Searching users...</div>
+      <div class="search-feedback" *ngIf="noUserFound">No user found</div>
+
+      <div class="card follow-card" *ngFor="let user of searchResults">
+        <div class="follow-info">
+          <img *ngIf="user.profilePicUrl" [src]="user.profilePicUrl" class="follow-avatar-img" alt="" />
+          <div *ngIf="!user.profilePicUrl" class="follow-avatar">{{ getSearchDisplayName(user).charAt(0).toUpperCase() }}</div>
+          <div>
+            <div class="follow-name">{{ getSearchDisplayName(user) }}</div>
+            <div class="follow-email">{{ getSearchHandle(user) }}</div>
+          </div>
+        </div>
+        <button class="btn-primary" type="button" (click)="followFromSearch(user)" [disabled]="isAlreadyFollowing(user.email)">
+          {{ isAlreadyFollowing(user.email) ? 'Following' : 'Follow' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button [class.active]="activeTab === 'following'" (click)="activeTab = 'following'">
+      Following ({{ following.length }})
+    </button>
+    <button [class.active]="activeTab === 'followers'" (click)="activeTab = 'followers'">
+      Followers ({{ followers.length }})
+    </button>
+    <button [class.active]="activeTab === 'suggested'" (click)="activeTab = 'suggested'">
+      Suggested ({{ suggestedUsers.length }})
+    </button>
+  </div>
+
+  <div *ngIf="activeTab === 'following'" class="follow-list">
+    <div *ngIf="following.length === 0" class="empty-state">
+      <p>You're not following anyone yet.</p>
+    </div>
+
+    <div class="card follow-card" *ngFor="let followItem of following">
+      <div class="follow-info">
+        <img *ngIf="getProfilePhoto(followItem.followingEmail)" [src]="getProfilePhoto(followItem.followingEmail)" class="follow-avatar-img" alt="" />
+        <div *ngIf="!getProfilePhoto(followItem.followingEmail)" class="follow-avatar">{{ getInitial(followItem.followingEmail) }}</div>
+        <div>
+          <div class="follow-name">{{ getDisplayName(followItem.followingEmail) }}</div>
+          <div class="follow-email">{{ getHandle(followItem.followingEmail) }}</div>
+        </div>
+      </div>
+      <button class="btn-danger" (click)="unfollow(followItem.followingEmail)">Unfollow</button>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab === 'followers'" class="follow-list">
+    <div *ngIf="followers.length === 0" class="empty-state">
+      <p>No followers yet.</p>
+    </div>
+
+    <div class="card follow-card" *ngFor="let followItem of followers">
+      <div class="follow-info">
+        <img *ngIf="getProfilePhoto(followItem.followerEmail)" [src]="getProfilePhoto(followItem.followerEmail)" class="follow-avatar-img" alt="" />
+        <div *ngIf="!getProfilePhoto(followItem.followerEmail)" class="follow-avatar">{{ getInitial(followItem.followerEmail) }}</div>
+        <div>
+          <div class="follow-name">{{ getDisplayName(followItem.followerEmail) }}</div>
+          <div class="follow-email">{{ getHandle(followItem.followerEmail) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab === 'suggested'" class="follow-list">
+    <div *ngIf="suggestedUsers.length === 0" class="empty-state">
+      <p>No suggestions yet. Follow some users to get recommendations.</p>
+    </div>
+
+    <div class="card follow-card" *ngFor="let email of suggestedUsers">
+      <div class="follow-info">
+        <img *ngIf="getProfilePhoto(email)" [src]="getProfilePhoto(email)" class="follow-avatar-img" alt="" />
+        <div *ngIf="!getProfilePhoto(email)" class="follow-avatar">{{ getInitial(email) }}</div>
+        <div>
+          <div class="follow-name">{{ getDisplayName(email) }}</div>
+          <div class="follow-email">{{ getHandle(email) }}</div>
+        </div>
+      </div>
+      <button class="btn-primary" (click)="follow(email)">Follow</button>
+    </div>
+  </div>
+</div>

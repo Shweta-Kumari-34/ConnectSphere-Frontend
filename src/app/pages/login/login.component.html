@@ -1,0 +1,164 @@
+<div class="login-page">
+  <!-- Local Nav removed as it duplicates the global TopNav -->
+
+  <div class="login-main">
+    <!-- Left Section: Content & Illustration -->
+    <div class="login-hero">
+      <div class="hero-content">
+        <h1 class="hero-title">Welcome Back</h1>
+        <p class="hero-subtitle">
+          Sign in to continue your journey and stay connected with people who matter.
+        </p>
+
+        <div class="hero-illustration">
+          <svg viewBox="0 0 600 400" class="premium-network-svg">
+            <!-- (SVG content remains similar but I'll tighten the viewBox height) -->
+            <defs>
+              <radialGradient id="globeGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#eef2ff" />
+                <stop offset="100%" stop-color="#e0e7ff" />
+              </radialGradient>
+            </defs>
+            <circle cx="300" cy="180" r="140" fill="url(#globeGlow)" opacity="0.6" />
+            <g stroke="#818cf8" stroke-width="1.5" opacity="0.3" fill="none">
+              <path d="M180 140 C220 100 380 100 420 140" />
+              <path d="M120 280 C180 200 420 200 480 280" />
+            </g>
+            <g>
+              <circle cx="300" cy="80" r="28" fill="#6366f1" />
+              <circle cx="180" cy="180" r="24" fill="#f472b6" />
+              <circle cx="420" cy="180" r="24" fill="#34d399" />
+              <circle cx="300" cy="300" r="26" fill="#fbbf24" />
+            </g>
+            <g opacity="0.9">
+              <path d="M100 130 Q110 110 125 120 T140 110" fill="none" stroke="#ec4899" stroke-width="2" />
+              <path d="M95 140 A8 8 0 0 1 111 140 A8 8 0 0 1 127 140 L111 156 Z" fill="#ec4899" />
+            </g>
+          </svg>
+        </div>
+
+        <div class="hero-quote-section">
+          <p class="signup-quote">
+            <span class="quote-mark">“</span>
+            Every great connection begins with a first <span class="quote-emphasis">hello.”</span>
+          </p>
+          <p class="signup-quote-subtitle">
+            Join conversations, discover stories, and reconnect with your community.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Section: Login Card -->
+    <div class="login-form-container">
+      <div class="login-card">
+        <div class="card-header">
+          <h2 class="card-title">{{ isForgotPassword ? 'Reset Password' : 'Sign In' }}</h2>
+          <p class="card-subtitle">
+            {{ isForgotPassword ? 'Enter your details to regain access.' : 'Welcome back! Please sign in to continue.' }}
+          </p>
+        </div>
+
+        <!-- Error/Success Messages -->
+        <div class="alert error" *ngIf="errorMessage">
+          <span class="alert-icon">⚠️</span>
+          {{ errorMessage }}
+        </div>
+        <div class="alert success" *ngIf="successMessage">
+          <span class="alert-icon">✅</span>
+          {{ successMessage }}
+        </div>
+
+        <!-- Main Login Form -->
+        <ng-container *ngIf="!isForgotPassword">
+          <form (ngSubmit)="onLogin()" #loginForm="ngForm" class="auth-form" *ngIf="loginMode === 'PASSWORD'">
+            <div class="input-group">
+              <label for="email">Email or Username</label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </span>
+                <input type="email" id="email" [(ngModel)]="email" name="email" placeholder="Enter your email or username" required />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="password">Password</label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </span>
+                <input [type]="showPassword ? 'text' : 'password'" id="password" [(ngModel)]="password" name="password" placeholder="Enter your password" required />
+                <button type="button" class="btn-toggle-view" (click)="showPassword = !showPassword" aria-label="Toggle password visibility">
+                  <svg *ngIf="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg *ngIf="showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-options">
+              <a (click)="showForgotPassword()" class="link-forgot">Forgot Password?</a>
+            </div>
+
+            <button type="submit" class="btn-submit" [disabled]="loading || !loginForm.valid">
+              <span *ngIf="!loading">Log In</span>
+              <span *ngIf="loading" class="btn-loader"></span>
+            </button>
+          </form>
+
+          <div class="divider">
+            <span class="divider-text">OR</span>
+          </div>
+
+          <div class="social-login">
+            <button class="btn-google" (click)="loginWithGoogle()">
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" />
+              <span>Continue with Google</span>
+            </button>
+          </div>
+
+          <div class="card-footer">
+            Don't have an account? <a routerLink="/register">Sign Up</a>
+          </div>
+        </ng-container>
+
+        <!-- Forgot Password Forms omitted for brevity but they should be styled similarly -->
+         <ng-container *ngIf="isForgotPassword">
+            <form (ngSubmit)="initiateForgotPassword()" class="auth-form" *ngIf="!otpSent">
+              <div class="input-group">
+                <label for="reset-email">Email Address</label>
+                <div class="input-wrapper">
+                  <span class="input-icon">✉️</span>
+                  <input type="email" id="reset-email" [(ngModel)]="email" name="email" placeholder="Enter your email" required />
+                </div>
+              </div>
+              <button type="submit" class="btn-submit" [disabled]="loading">
+                {{ loading ? 'Sending...' : 'Send Reset Code' }}
+              </button>
+              <button type="button" class="btn-link-back" (click)="backToLogin()">Back to Sign In</button>
+            </form>
+
+            <form (ngSubmit)="verifyForgotPassword()" class="auth-form" *ngIf="otpSent">
+              <div class="input-group">
+                <label for="otp">Verification Code</label>
+                <input type="text" id="otp" [(ngModel)]="otp" name="otp" placeholder="Enter 6-digit code" maxlength="6" required />
+              </div>
+              <div class="input-group">
+                <label for="new-pass">New Password</label>
+                <input [type]="showPassword ? 'text' : 'password'" id="new-pass" [(ngModel)]="newPassword" name="newPassword" placeholder="Minimum 8 characters" required />
+              </div>
+              <button type="submit" class="btn-submit" [disabled]="loading">
+                {{ loading ? 'Resetting...' : 'Reset Password' }}
+              </button>
+              <button type="button" class="btn-link-back" (click)="backToLogin()">Back to Sign In</button>
+            </form>
+         </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>&copy; 2026 ConnectSphere. All rights reserved.</p>
+  </footer>
+</div>
+

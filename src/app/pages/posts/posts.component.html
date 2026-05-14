@@ -1,0 +1,363 @@
+<div class="page-container posts-page" (click)="closeReactionPicker()">
+  <div class="page-header">
+    <div>
+      <h1>News Feed</h1>
+      <p>Share updates and photos with your network.</p>
+      <p class="posts-quote">&ldquo;Turn moments into memories worth sharing.&rdquo;</p>
+    </div>
+    <button class="btn-primary" type="button" (click)="toggleComposer()">
+      {{ showForm ? 'Cancel' : 'Create Post' }}
+    </button>
+  </div>
+
+  <div class="success-message" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <div class="loading-state" *ngIf="loading && posts.length === 0">
+    <div class="loading-spinner"></div>
+    <p>Loading your feed...</p>
+  </div>
+
+  <div class="stories-bar">
+    <div class="story-item your-story" (click)="hasMyOwnStory ? openMyStory() : toggleComposer()">
+      <div class="story-ring" [class.has-story]="hasMyOwnStory" [class.add]="!hasMyOwnStory">
+        <div class="story-avatar">{{ !hasMyOwnStory ? '+' : myEmail.charAt(0).toUpperCase() }}</div>
+      </div>
+      <span class="story-name">Your Story</span>
+    </div>
+
+    <div class="story-item" *ngFor="let story of activeStories; let i = index" (click)="openStoryViewer(i)">
+      <div class="story-ring has-story">
+        <div class="story-avatar" style="border: 2px solid white; background: #fff;">{{ story.userEmail.charAt(0).toUpperCase() }}</div>
+      </div>
+      <span class="story-name">{{ story.userEmail.split('@')[0] | slice:0:8 }}</span>
+    </div>
+  </div>
+
+  <div class="create-form compact-form" *ngIf="showForm" #composerCard>
+    <div class="composer-header">
+      <div>
+        <h2>{{ composerTitle }}</h2>
+        <p>{{ composerDescription }}</p>
+      </div>
+
+      <div class="composer-mode-switch">
+        <button class="mode-btn" type="button" [class.active]="composerMode === 'text'" (click)="setComposerMode('text')">Text</button>
+        <button class="mode-btn" type="button" [class.active]="composerMode === 'upload'" (click)="setComposerMode('upload')">Upload</button>
+        <button class="mode-btn" type="button" [class.active]="composerMode === 'all'" (click)="setComposerMode('all')">Full</button>
+      </div>
+    </div>
+
+    <div class="composer-grid">
+      <div class="form-group">
+        <label for="postTitle">Title</label>
+        <input type="text" id="postTitle" [(ngModel)]="newTitle" placeholder="Optional title" />
+      </div>
+
+      <div class="form-group">
+        <label for="postVisibility">Visibility</label>
+        <select id="postVisibility" [(ngModel)]="newVisibility">
+          <option value="PUBLIC">Public</option>
+          <option value="FOLLOWERS_ONLY">Followers Only</option>
+          <option value="PRIVATE">Private</option>
+        </select>
+      </div>
+
+      <div class="form-group content-group">
+        <label for="postContent">Content</label>
+        <textarea
+          id="postContent"
+          [(ngModel)]="newContent"
+          placeholder="What's on your mind? Use #hashtags and @mentions."
+          rows="3"
+        ></textarea>
+      </div>
+
+      <div class="form-group media-group" *ngIf="composerMode !== 'text'">
+        <label>Add Media</label>
+
+        <div class="file-picker compact-picker" (click)="fileInput.click()" *ngIf="!selectedFiles.length">
+          <div class="picker-copy">
+            <div class="picker-title">Choose images or videos from your device</div>
+            <p>Upload one file for a single post or several files for a carousel.</p>
+          </div>
+          <button class="picker-btn" type="button">Browse</button>
+        </div>
+
+        <div class="selected-media-grid" *ngIf="selectedFiles.length">
+          <div class="selected-media-card" *ngFor="let preview of selectedMediaPreviews; let index = index">
+            <div class="selected-media-preview">
+              <video *ngIf="preview.isVideo" [src]="preview.objectUrl" muted playsinline preload="metadata"></video>
+              <img *ngIf="!preview.isVideo" [src]="preview.objectUrl" alt="Selected media preview" />
+              <button class="remove-image" type="button" (click)="removeSelectedFile(index)">x</button>
+            </div>
+
+            <div class="selected-media-meta">
+              <span class="selected-media-name">{{ preview.file.name }}</span>
+              <span>{{ mediaUploadService.getFileTypeLabel(preview.file) }} · {{ mediaUploadService.getFileSizeLabel(preview.file) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-picker compact-picker secondary-picker" (click)="fileInput.click()" *ngIf="selectedFiles.length">
+          <div class="picker-copy">
+            <div class="picker-title">Replace selected media</div>
+            <p>{{ selectedFiles.length }} file{{ selectedFiles.length === 1 ? '' : 's' }} selected for this post.</p>
+          </div>
+          <button class="picker-btn" type="button">Choose Again</button>
+        </div>
+
+        <div class="file-error" *ngIf="fileError">{{ fileError }}</div>
+
+        <input
+          type="file"
+          #fileInput
+          multiple
+          [accept]="uploadAccept"
+          (change)="onFileSelected($event)"
+          style="display: none"
+        />
+      </div>
+    </div>
+
+    <div class="composer-footer">
+      <div class="mention-hint">
+        <span *ngIf="composerMode === 'text'">Text post mode is active. Add a title or write your update below.</span>
+        <span *ngIf="composerMode === 'upload'">Upload mode is active. Multiple files will publish as one carousel post.</span>
+        <span *ngIf="composerMode === 'all'">Use @username to mention someone and #hashtag to tag a topic.</span>
+      </div>
+      <div class="composer-actions">
+        <button class="btn-secondary-light" type="button" (click)="clearComposer()" [disabled]="loading">Clear</button>
+        <button class="btn-primary" type="button" (click)="createPost()" [disabled]="loading || !canSubmitPost">
+          {{ loading ? 'Posting...' : 'Publish Post' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-list">
+    <div class="post-card" *ngFor="let post of posts">
+      <div class="post-header">
+        <div class="post-meta">
+          <span class="post-author">
+            <a [routerLink]="['/user', post.userEmail]" class="author-link">
+              {{ post.userEmail.split('@')[0] }}
+              <span class="inline-badge verified" *ngIf="isVerifiedUser(post.userEmail)">Verified</span>
+              <span class="inline-badge premium" *ngIf="isPremiumUser(post.userEmail)">Premium</span>
+            </a>
+          </span>
+          <span class="post-time">{{ getTimeAgo(post.createdAt) }}</span>
+        </div>
+
+        <div class="post-header-actions">
+          <span class="post-visibility" [ngClass]="post.visibility.toLowerCase()">
+            {{ post.visibility === 'PUBLIC' ? 'Public' : post.visibility === 'PRIVATE' ? 'Private' : 'Followers' }}
+          </span>
+
+          <div class="post-menu" *ngIf="isMyPost(post)">
+            <button class="menu-btn" type="button" (click)="startEditPost(post)" title="Edit">Edit</button>
+            <button class="menu-btn" type="button" (click)="deletePost(post.id)" title="Delete">Delete</button>
+          </div>
+
+          <button class="report-btn" type="button" *ngIf="!isMyPost(post)" (click)="openReport(post.id, 'Post')" title="Report post">
+            🚩 Report
+          </button>
+        </div>
+      </div>
+
+      <div class="edit-post-form" *ngIf="editingPost === post.id">
+        <input type="text" [(ngModel)]="editPostTitle" placeholder="Title" class="edit-title-input" />
+        <textarea [(ngModel)]="editPostContent" placeholder="Content" rows="3" class="edit-content-input"></textarea>
+        <div class="edit-actions">
+          <button class="btn-small save-btn" type="button" (click)="saveEditPost(post)">Save</button>
+          <button class="btn-cancel" type="button" (click)="cancelEditPost()">Cancel</button>
+        </div>
+      </div>
+
+      <div *ngIf="editingPost !== post.id">
+        <h3 *ngIf="post.title">{{ post.title }}</h3>
+        <p class="post-content" *ngIf="post.content">{{ post.content }}</p>
+
+        <app-post-carousel
+          *ngIf="post.mediaUrls && post.mediaUrls.length > 0"
+          [mediaUrls]="post.mediaUrls"
+          ariaLabel="Feed post media"
+        ></app-post-carousel>
+      </div>
+
+      <div class="post-actions">
+        <div class="reaction-container">
+          <button class="action-btn" type="button" [class.liked]="likedPosts.has(post.id)" (click)="quickToggleLike(post)">
+            {{ getReactionEmoji(post.id) }} <span>{{ post.likeCount || 0 }}</span>
+          </button>
+
+          <button class="action-btn picker-toggle" type="button" (click)="toggleReactionPicker(post.id, $event)">
+            ✨ React
+          </button>
+
+          <div class="reaction-picker" *ngIf="showReactionPicker === post.id" (click)="$event.stopPropagation()">
+            <button
+              *ngFor="let r of reactionTypes"
+              class="reaction-option"
+              type="button"
+              [class.active]="postReactions[post.id] === r.type"
+              (click)="reactToPost(post, r.type)"
+              [title]="r.label"
+            >
+              {{ r.emoji }}
+            </button>
+          </div>
+        </div>
+
+        <button class="action-btn" type="button" (click)="toggleComments(post.id)">
+          💬 Comments ({{ post.commentCount || 0 }})
+        </button>
+      </div>
+
+      <div class="comments-section" *ngIf="expandedComments.has(post.id)">
+        <div class="comment-input">
+          <div class="comment-avatar-small">{{ authService.getEmail()?.charAt(0)?.toUpperCase() || 'U' }}</div>
+          <div class="comment-field-wrapper">
+            <input
+              type="text"
+              [(ngModel)]="newCommentText[post.id]"
+              placeholder="Write a comment..."
+              (keyup.enter)="addComment(post.id)"
+            />
+            <button class="btn-comment-submit" type="button" (click)="addComment(post.id)" [disabled]="!newCommentText[post.id]">
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="comment-list scrollable-comments">
+          <div class="comment-thread" *ngFor="let c of getRootComments(post.id)">
+            <div class="comment-item root-comment">
+              <div class="comment-avatar">{{ c.userEmail.charAt(0).toUpperCase() }}</div>
+
+              <div class="comment-body">
+                <div *ngIf="editingComment === c.id" class="edit-comment-inline">
+                  <input type="text" [(ngModel)]="editCommentText" (keyup.enter)="saveEditComment(c)" />
+                  <button class="btn-small" type="button" (click)="saveEditComment(c)">Save</button>
+                  <button class="btn-cancel" type="button" (click)="cancelEditComment()">Cancel</button>
+                </div>
+
+                <div *ngIf="editingComment !== c.id">
+                  <div class="comment-author">
+                    {{ c.userEmail.split('@')[0] }}
+                    <span class="inline-badge verified" *ngIf="isVerifiedUser(c.userEmail)">Verified</span>
+                    <span class="inline-badge premium" *ngIf="isPremiumUser(c.userEmail)">Premium</span>
+                  </div>
+                  <div class="comment-text">{{ c.content }}</div>
+
+                  <div class="comment-actions-row">
+                    <span class="comment-time">{{ getTimeAgo(c.createdAt) }}</span>
+                    <button class="reply-btn" type="button" [class.liked]="likedComments.has(c.id)" (click)="toggleCommentLike(c)">
+                      {{ likedComments.has(c.id) ? '❤️' : '🤍' }} {{ c.likeCount || 0 }}
+                    </button>
+                    <button class="reply-btn" type="button" (click)="startReply(post.id, c.id)">💬 Reply</button>
+                    <button class="reply-btn" type="button" *ngIf="isMyComment(c)" (click)="startEditComment(c)">✏️ Edit</button>
+                    <button class="reply-btn delete-action" type="button" *ngIf="isMyComment(c)" (click)="deleteComment(post.id, c.id)">🗑️ Delete</button>
+                    <button class="reply-btn report-action" type="button" *ngIf="!isMyComment(c)" (click)="openReport(c.id, 'Comment')">🚩 Report</button>
+                    <button
+                      class="view-replies-btn"
+                      type="button"
+                      *ngIf="hasReplies(post.id, c.id)"
+                      (click)="toggleReplies(c.id)"
+                    >
+                      {{ expandedReplies.has(c.id) ? 'Hide' : 'View' }} {{ getReplies(post.id, c.id).length }}
+                      {{ getReplies(post.id, c.id).length === 1 ? 'reply' : 'replies' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="reply-input-container" *ngIf="replyingTo[post.id] === c.id">
+              <div class="thread-line"></div>
+              <div class="comment-field-wrapper reply-field-wrapper">
+                <input
+                  type="text"
+                  [(ngModel)]="replyText[c.id]"
+                  [placeholder]="'Reply to ' + c.userEmail.split('@')[0] + '...'"
+                  (keyup.enter)="addReply(post.id, c.id)"
+                />
+                <div class="reply-actions-integrated">
+                  <button class="btn-reply-cancel" type="button" (click)="cancelReply(post.id)">×</button>
+                  <button class="btn-comment-submit" type="button" (click)="addReply(post.id, c.id)" [disabled]="!replyText[c.id]">
+                    <span>→</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="replies-container" *ngIf="expandedReplies.has(c.id) && hasReplies(post.id, c.id)">
+              <div class="thread-line"></div>
+              <div class="reply-list">
+                <div class="comment-item reply-comment" *ngFor="let r of getReplies(post.id, c.id)">
+                  <div class="comment-avatar reply-avatar">{{ r.userEmail.charAt(0).toUpperCase() }}</div>
+
+                  <div class="comment-body">
+                    <div class="comment-author">
+                      {{ r.userEmail.split('@')[0] }}
+                      <span class="inline-badge verified" *ngIf="isVerifiedUser(r.userEmail)">Verified</span>
+                      <span class="inline-badge premium" *ngIf="isPremiumUser(r.userEmail)">Premium</span>
+                    </div>
+                    <div class="comment-text">{{ r.content }}</div>
+                    <div class="comment-actions-row">
+                      <span class="comment-time">{{ getTimeAgo(r.createdAt) }}</span>
+                      <button class="reply-btn" type="button" [class.liked]="likedComments.has(r.id)" (click)="toggleCommentLike(r)">
+                        {{ likedComments.has(r.id) ? '❤️' : '🤍' }} {{ r.likeCount || 0 }}
+                      </button>
+                      <button class="reply-btn delete-action" type="button" *ngIf="isMyComment(r)" (click)="deleteComment(post.id, r.id)">🗑️ Delete</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="no-comments" *ngIf="!postComments[post.id]?.length">No comments yet. Be the first.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="posts.length === 0 && !loading">
+    <div class="empty-icon">📭</div>
+    <p>No posts yet<br/>Share your first moment with ConnectSphere.</p>
+    <a class="create-first-post-link" routerLink="/posts" [queryParams]="{ composer: 'text' }">✨ Create First Post</a>
+  </div>
+</div>
+
+<div class="report-overlay" *ngIf="showReportModal" (click)="closeReport()">
+  <div class="report-modal" (click)="$event.stopPropagation()">
+    <button class="modal-close" type="button" (click)="closeReport()">x</button>
+    <h3>Report {{ reportTargetType }}</h3>
+    <p class="report-desc">Tell us what is wrong with this {{ reportTargetType.toLowerCase() }}.</p>
+
+    <div class="report-options">
+      <label *ngFor="let reason of [
+        { label: 'Spam', emoji: '🚫' },
+        { label: 'Harassment or bullying', emoji: '😠' },
+        { label: 'Hate speech', emoji: '🚩' },
+        { label: 'Violence or threats', emoji: '⚠️' },
+        { label: 'Misinformation', emoji: '❌' },
+        { label: 'Other', emoji: '💡' }
+      ]">
+        <input type="radio" name="reportReason" [value]="reason.label" [(ngModel)]="reportReason" />
+        <span class="reason-emoji">{{ reason.emoji }}</span> {{ reason.label }}
+      </label>
+    </div>
+
+    <button class="btn-primary report-submit" type="button" (click)="submitReport()" [disabled]="!reportReason">Submit Report</button>
+  </div>
+</div>
+
+<app-story-viewer
+  *ngIf="showStoryViewer"
+  [stories]="viewerStories"
+  [currentIndex]="selectedStoryIndex"
+  [currentUserEmail]="myEmail"
+  (closed)="closeStoryViewer()"
+></app-story-viewer>

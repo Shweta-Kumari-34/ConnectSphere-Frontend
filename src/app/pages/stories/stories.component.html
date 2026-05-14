@@ -1,0 +1,114 @@
+<div class="page-container stories-page">
+  <div class="page-header">
+    <div>
+      <h1>Stories</h1>
+      <p>Share a photo that disappears after 24 hours.</p>
+      <p class="page-quote">&ldquo;Small moments. Lasting memories.&rdquo;</p>
+    </div>
+    <button
+      class="btn-primary"
+      type="button"
+      (click)="onShareStoryClick()"
+      [disabled]="loading"
+    >
+      {{ loading ? 'Creating...' : (showForm ? 'Share Story' : 'New Story') }}
+    </button>
+  </div>
+
+  <div class="success-message" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <div class="stories-bar" *ngIf="!showForm">
+    <div class="story-item your-story" (click)="hasMyOwnStory ? openMyStory() : onShareStoryClick()">
+      <div class="story-ring" [class.has-story]="hasMyOwnStory" [class.add]="!hasMyOwnStory">
+        <div class="story-avatar">{{ !hasMyOwnStory ? '+' : myEmail.charAt(0).toUpperCase() }}</div>
+      </div>
+      <span class="story-name">Your Story</span>
+    </div>
+
+    <div class="story-item" *ngFor="let story of activeStories; let i = index" (click)="openStoryViewer(i)">
+      <div class="story-ring has-story">
+        <div class="story-avatar" style="border: 2px solid white; background: #fff;">{{ story.userEmail.charAt(0).toUpperCase() }}</div>
+      </div>
+      <span class="story-name">{{ story.userEmail.split('@')[0] | slice:0:8 }}</span>
+    </div>
+  </div>
+
+  <div class="create-form story-form" *ngIf="showForm">
+    <div class="form-group">
+      <label>Choose from your device</label>
+
+      <div class="file-picker compact-picker" (click)="storyFileInput.click()" *ngIf="!selectedImagePreview && !selectedFiles.length">
+        <div class="picker-copy">
+          <div class="picker-title">Select photo(s)</div>
+          <p>JPEG, PNG, and WebP files are supported. You can choose multiple files.</p>
+        </div>
+        <button class="picker-btn" type="button">Browse</button>
+      </div>
+
+      <div class="image-preview compact-preview" *ngIf="selectedImagePreview">
+        <img [src]="selectedImagePreview" alt="Story preview" />
+        <button class="remove-image" type="button" (click)="removeImage()">x</button>
+      </div>
+
+      <div class="video-file-info compact-video-info" *ngIf="selectedFiles.length && !selectedImagePreview">
+        <div class="video-details">
+          <span class="video-name">{{ selectedFileLabel }}</span>
+          <span class="video-size">{{ selectedFiles.length }} file(s) selected</span>
+        </div>
+        <button class="remove-image" type="button" (click)="removeImage()">x</button>
+      </div>
+
+      <div class="file-error" *ngIf="fileError">{{ fileError }}</div>
+
+      <input
+        type="file"
+        #storyFileInput
+        [accept]="uploadAccept"
+        multiple
+        (change)="onFileSelected($event)"
+        style="display: none"
+      />
+    </div>
+
+    <div class="story-form-grid">
+      <div class="form-group">
+        <label for="mediaUrl">Or paste a media URL</label>
+        <input
+          type="text"
+          id="mediaUrl"
+          [(ngModel)]="newMediaUrl"
+          [disabled]="!!selectedFiles.length"
+          placeholder="https://example.com/story.jpg"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="caption">Caption (optional)</label>
+        <input type="text" id="caption" [(ngModel)]="newCaption" placeholder="Say something about this story" />
+      </div>
+    </div>
+
+    <div class="story-form-footer">
+      <div class="story-hint">Tip: uploaded files are saved through the media service, then shown from the shared uploads folder.</div>
+      <div class="composer-actions">
+        <button class="btn-secondary-light" type="button" (click)="cancelComposer()" [disabled]="loading">Cancel</button>
+        <button class="btn-primary" type="button" (click)="createStory()" [disabled]="loading || !canSubmitStory">
+          {{ loading ? 'Creating...' : 'Share Story' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="upload-note" *ngIf="!showForm">
+    Stories now appear on profile and feed surfaces after upload.
+  </div>
+</div>
+
+<app-story-viewer
+  *ngIf="showStoryViewer"
+  [stories]="viewerStories"
+  [currentIndex]="selectedStoryIndex"
+  [currentUserEmail]="myEmail"
+  (closed)="closeStoryViewer()"
+></app-story-viewer>

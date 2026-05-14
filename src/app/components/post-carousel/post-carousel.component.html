@@ -1,0 +1,57 @@
+<div
+  class="post-carousel"
+  *ngIf="mediaUrls.length > 0"
+  (touchstart)="onTouchStart($event)"
+  (touchend)="onTouchEnd($event)"
+  [attr.aria-label]="ariaLabel"
+>
+  <button
+    class="carousel-nav prev"
+    type="button"
+    *ngIf="hasMultipleItems"
+    (click)="previousSlide()"
+    aria-label="Previous media"
+  >
+    ‹
+  </button>
+
+  <div class="carousel-frame">
+    <video
+      *ngIf="isVideoUrl(activeMediaUrl); else imageTemplate"
+      class="carousel-media"
+      [src]="activeMediaUrl"
+      controls
+      preload="metadata"
+      playsinline
+    ></video>
+
+    <ng-template #imageTemplate>
+      <img class="carousel-media" [src]="activeMediaUrl" [alt]="ariaLabel" />
+    </ng-template>
+
+    <div class="carousel-counter" *ngIf="hasMultipleItems">
+      {{ activeIndex + 1 }} / {{ mediaUrls.length }}
+    </div>
+  </div>
+
+  <button
+    class="carousel-nav next"
+    type="button"
+    *ngIf="hasMultipleItems"
+    (click)="nextSlide()"
+    aria-label="Next media"
+  >
+    ›
+  </button>
+
+  <div class="carousel-dots" *ngIf="hasMultipleItems">
+    <button
+      *ngFor="let mediaUrl of mediaUrls; let index = index"
+      class="carousel-dot"
+      type="button"
+      [class.active]="index === activeIndex"
+      (click)="goToSlide(index)"
+      [attr.aria-label]="'Go to media ' + (index + 1)"
+    ></button>
+  </div>
+</div>

@@ -1,0 +1,262 @@
+.story-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.story-viewer-modal {
+  position: relative;
+  width: min(460px, 100vw);
+  height: 100vh;
+  background: #000;
+  overflow: hidden;
+  color: #fff;
+}
+
+.story-progress-row {
+  position: absolute;
+  top: 12px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 4;
+}
+
+.story-progress-track {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.26);
+  overflow: hidden;
+}
+
+.story-progress-fill {
+  height: 100%;
+  background: #fff;
+  width: 0;
+}
+
+.story-topbar {
+  position: absolute;
+  top: 24px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 4;
+}
+
+.story-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.story-age {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 500;
+}
+
+.story-author-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.story-actions {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.story-menu-btn,
+.story-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.story-menu-btn {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.story-menu {
+  position: absolute;
+  top: 34px;
+  right: 36px;
+  min-width: 130px;
+  border-radius: 10px;
+  background: rgba(18, 18, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+
+.story-menu-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  text-align: left;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.story-menu-item.delete {
+  color: #ff6b6b;
+}
+
+.story-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.story-media-stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.story-media-stage img,
+.story-media-stage video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.story-caption {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 100px; // Moved up to make room for footer
+  z-index: 4;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.tap-zone {
+  position: absolute;
+  top: 0;
+  bottom: 30%; // Only cover top 70% — leave the comment/emoji footer fully interactive
+  width: 40%;
+  border: none;
+  background: transparent;
+  z-index: 3;
+  cursor: pointer;
+}
+
+.tap-zone.left {
+  left: 0;
+}
+
+.tap-zone.right {
+  right: 0;
+}
+
+.story-footer {
+  position: absolute;
+  bottom: 20px;
+  left: 12px;
+  right: 12px;
+  z-index: 20; // Must be above tap-zones (z-index 3) and all other overlays
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: all; // Ensure all child interactions are captured
+}
+
+.story-input-wrapper {
+  display: flex;
+  gap: 10px;
+  
+  input {
+    flex: 1;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 999px;
+    padding: 10px 18px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    &:focus {
+      border-color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+.story-send-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 4px;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.story-quick-reactions {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 4px;
+
+  button {
+    background: transparent;
+    border: none;
+    font-size: 26px;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    &:hover {
+      transform: scale(1.3);
+    }
+
+    &:active {
+      transform: scale(0.9);
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .story-viewer-modal {
+    height: min(92vh, 900px);
+    border-radius: 16px;
+  }
+}

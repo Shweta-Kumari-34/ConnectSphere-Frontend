@@ -1,0 +1,385 @@
+.post-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 300;
+}
+
+.post-modal {
+  width: min(960px, 100%);
+  background: #ffffff;
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(15, 23, 42, 0.6);
+  color: #ffffff;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.post-modal-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+  min-height: 560px;
+}
+
+.post-modal-content.no-media {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.post-modal-image {
+  background: linear-gradient(135deg, #f3f6fb, #e7edf5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.post-modal-image app-post-carousel {
+  width: 100%;
+}
+
+.post-modal-letter {
+  font-size: 72px;
+  font-weight: 700;
+  color: #9aa4b2;
+}
+
+.post-modal-details {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 22px;
+  gap: 16px;
+}
+
+.post-modal-content.no-media .post-modal-details {
+  max-height: min(84vh, 780px);
+}
+
+.post-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.author-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.post-modal-avatar,
+.post-modal-avatar-img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+}
+
+.post-modal-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ff8a00, #ff2d55 55%, #5b8cff);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.post-modal-avatar-img {
+  object-fit: cover;
+}
+
+.post-modal-handle {
+  font-size: 12px;
+  color: #8e8e8e;
+}
+
+.delete-post-btn {
+  border: 1px solid rgba(237, 73, 86, 0.24);
+  background: rgba(237, 73, 86, 0.07);
+  color: #ed4956;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.post-modal-copy h4 {
+  margin: 4px 0 8px;
+  font-size: 20px;
+}
+
+.post-modal-time {
+  font-size: 12px;
+  color: #8e8e8e;
+  text-transform: lowercase;
+}
+
+.post-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.post-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.icon-action {
+  border: none;
+  background: transparent;
+  color: #111827;
+  padding: 0;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.icon-mark {
+  display: block;
+  font-size: 28px;
+}
+
+.icon-action.active {
+  color: #ed4956;
+}
+
+.save-action.active {
+  color: #111827;
+}
+
+.feedback-chip {
+  font-size: 12px;
+  color: #0095f6;
+  font-weight: 700;
+}
+
+.post-like-count {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.post-caption-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.post-caption-line {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #262626;
+}
+
+.post-caption-line strong {
+  flex: 0 0 auto;
+}
+
+.post-caption-line span {
+  word-break: break-word;
+}
+
+.view-comments-link {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: #8e8e8e;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.comments-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  flex: 1;
+}
+
+.comment-input {
+  display: flex;
+  gap: 8px;
+}
+
+.comment-input input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 999px;
+  border: 1px solid #dbdbdb;
+  background: #fafafa;
+}
+
+.comment-submit {
+  border: none;
+  background: #0095f6;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 10px;
+}
+
+.comment-avatar {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f58529, #dd2a7b 55%, #515bd4);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.comment-avatar.small {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  font-size: 11px;
+}
+
+.comment-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.comment-topline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.comment-topline span {
+  font-size: 12px;
+  color: #8e8e8e;
+}
+
+.comment-text {
+  margin-top: 4px;
+  color: #262626;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.text-action {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.text-action.active {
+  color: #ed4956;
+}
+
+.text-action.danger {
+  color: #ed4956;
+}
+
+.reply-list {
+  margin-left: 44px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reply-item {
+  opacity: 0.94;
+}
+
+.empty-comments,
+.login-hint {
+  color: #8e8e8e;
+  font-size: 13px;
+}
+
+.login-link-btn {
+  border: none;
+  background: transparent;
+  color: #0095f6;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+@media (max-width: 768px) {
+  .post-modal-content {
+    grid-template-columns: 1fr;
+  }
+
+  .post-modal-image {
+    min-height: 280px;
+  }
+
+  .icon-mark {
+    font-size: 25px;
+  }
+}
+.inline-badge {
+  display: inline-block;
+  margin-left: 6px;
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.inline-badge.verified {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.inline-badge.premium {
+  background: #fef3c7;
+  color: #92400e;
+}

@@ -1,0 +1,246 @@
+<!-- ═══════════ GUEST TOP NAV ═══════════ -->
+<nav class="guest-topnav" *ngIf="isGuestPage()">
+  <a routerLink="/public/explore" class="guest-brand">
+    <img src="/ConnectSphere.jpeg" alt="ConnectSphere" class="brand-logo" />
+    <span class="guest-brand-text">ConnectSphere</span>
+  </a>
+
+  <div class="guest-nav-center">
+    <div class="guest-nav-links">
+      <a routerLink="/public/explore" routerLinkActive="active" class="guest-nav-link">Explore</a>
+      <a routerLink="/search" routerLinkActive="active" class="guest-nav-link">Search</a>
+    </div>
+  </div>
+
+  <div class="guest-auth-buttons">
+    <ng-container *ngIf="!authService.isLoggedIn()">
+      <a routerLink="/login" class="guest-login-btn">Sign In</a>
+      <a routerLink="/register" class="guest-signup-btn">Create Account</a>
+    </ng-container>
+    <ng-container *ngIf="authService.isLoggedIn()">
+      <a routerLink="/dashboard" class="guest-signup-btn">Go to Dashboard</a>
+    </ng-container>
+  </div>
+</nav>
+
+<!-- ═══════════ AUTHENTICATED SIDEBAR ═══════════ -->
+<nav class="sidebar" *ngIf="showSidebar()">
+  <div class="sidebar-top">
+    <div class="sidebar-brand">
+      <img src="/ConnectSphere.jpeg" alt="ConnectSphere" class="brand-logo" />
+      <span class="brand-text">ConnectSphere</span>
+    </div>
+  </div>
+
+  <div class="sidebar-scroll" id="sidebar-scroll">
+    <div class="sidebar-nav" *ngIf="!authService.isStaff()">
+      <!-- Home (Feed) -->
+      <a routerLink="/posts" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="nav-icon-svg nav-icon-home">
+            <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"></path>
+          </svg>
+        </span>
+        <span class="nav-label">Home</span>
+      </a>
+      <!-- Explore -->
+      <a routerLink="/explore" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="nav-icon-svg">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="m10 14 7-7"></path>
+            <path d="M14 7h3v3"></path>
+          </svg>
+        </span>
+        <span class="nav-label">Explore</span>
+      </a>
+      <!-- Search -->
+      <a routerLink="/search" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="nav-icon-svg">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m20 20-3.5-3.5"></path>
+          </svg>
+        </span>
+        <span class="nav-label">Search</span>
+      </a>
+      <!-- Reels -->
+      <a routerLink="/reels" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="nav-icon-svg">
+            <rect x="4" y="4" width="16" height="16" rx="4"></rect>
+            <path d="m10 9 6 3-6 3z"></path>
+          </svg>
+        </span>
+        <span class="nav-label">Reels</span>
+      </a>
+      <!-- Stories -->
+      <a routerLink="/stories" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="nav-icon-svg">
+            <rect x="4" y="6" width="16" height="12" rx="3"></rect>
+            <circle cx="12" cy="12" r="3.25"></circle>
+            <path d="M8 6.5 9.75 4h4.5L16 6.5"></path>
+          </svg>
+        </span>
+        <span class="nav-label">Stories</span>
+      </a>
+      <!-- Notifications -->
+      <a routerLink="/notifications" routerLinkActive="active" class="nav-item notif-nav-item">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="nav-icon-svg">
+            <path d="M12 20.5s-7-4.35-7-10.1C5 7.55 7.16 5.5 10 5.5c1.63 0 3.16.83 4 2.12.84-1.29 2.37-2.12 4-2.12 2.84 0 5 2.05 5 4.9 0 5.75-7 10.1-7 10.1H12z"></path>
+          </svg>
+        </span>
+        <span class="nav-label">Notifications</span>
+        <span class="notif-badge" *ngIf="unreadCount > 0">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+      </a>
+      <!-- Follows -->
+      <a routerLink="/follows" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="nav-icon-svg">
+            <path d="M8 12.25a3.25 3.25 0 1 1 0-6.5 3.25 3.25 0 0 1 0 6.5Z"></path>
+            <path d="M16.5 10.75a2.75 2.75 0 1 1 0-5.5 2.75 2.75 0 0 1 0 5.5Z"></path>
+            <path d="M3.5 18.5c.55-2.48 2.6-4 4.75-4s4.2 1.52 4.75 4"></path>
+            <path d="M13 18.5c.42-1.84 1.9-3 3.5-3s3.08 1.16 3.5 3"></path>
+          </svg>
+        </span>
+        <span class="nav-label">Follows</span>
+      </a>
+      <!-- Create -->
+      <a (click)="showCreateMenu = !showCreateMenu" class="nav-item create-btn">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="nav-icon-svg">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+          </svg>
+        </span>
+        <span class="nav-label">Create</span>
+      </a>
+    </div>
+
+    <div class="sidebar-bottom">
+      <ng-container *ngIf="!authService.isStaff()">
+        <!-- Premium -->
+        <a routerLink="/payments" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="nav-icon-svg">
+              <path d="m12 3 2.6 4.15L19.5 8l-3.2 3.7.7 5L12 14.8 7 16.7l.7-5L4.5 8l4.9-.85z"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Premium</span>
+        </a>
+        <!-- Settings -->
+        <a routerLink="/settings/subscription" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="nav-icon-svg">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Settings</span>
+        </a>
+        <!-- Dashboard -->
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item dashboard-link">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="nav-icon-svg">
+              <rect x="4" y="4" width="6" height="6" rx="1.5"></rect>
+              <rect x="14" y="4" width="6" height="10" rx="1.5"></rect>
+              <rect x="4" y="14" width="6" height="6" rx="1.5"></rect>
+              <rect x="14" y="16" width="6" height="4" rx="1.5"></rect>
+            </svg>
+          </span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+        <!-- Profile -->
+        <a routerLink="/profile" routerLinkActive="active" class="nav-item">
+          <div class="nav-avatar">{{ getInitial() }}</div>
+          <span class="nav-label">Profile</span>
+        </a>
+      </ng-container>
+      <a *ngIf="canAccessAdminPanel()" [routerLink]="getAdminRouterLink()" routerLinkActive="active" class="nav-item admin-link">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="nav-icon-svg">
+            <path d="m12 3 7 3v5c0 4.75-2.8 8.4-7 10-4.2-1.6-7-5.25-7-10V6z"></path>
+            <path d="M12 8v8"></path>
+            <path d="M8.5 11.5h7"></path>
+          </svg>
+        </span>
+        <span class="nav-label">{{ getAdminNavLabel() }}</span>
+      </a>
+      <a (click)="logout()" class="nav-item logout-link">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="nav-icon-svg">
+            <path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"></path>
+            <path d="m16 17 5-5-5-5"></path>
+            <path d="M21 12H9"></path>
+          </svg>
+        </span>
+        <span class="nav-label">Logout</span>
+      </a>
+    </div>
+  </div>
+
+  <button type="button" class="sidebar-scroll-btn up" (click)="scrollSidebar(-240)" aria-label="Scroll menu up">
+    &#9650;
+  </button>
+  <button type="button" class="sidebar-scroll-btn down" (click)="scrollSidebar(240)" aria-label="Scroll menu down">
+    &#9660;
+  </button>
+</nav>
+
+<!-- ═══════════ CREATE MENU OVERLAY ═══════════ -->
+<div class="create-overlay" *ngIf="showCreateMenu" (click)="showCreateMenu = false">
+  <div class="create-menu" (click)="$event.stopPropagation()">
+    <h3>Create</h3>
+    <a routerLink="/feed" [queryParams]="{ composer: 'text' }" (click)="showCreateMenu = false" class="create-option">
+      <span class="create-option-icon">📝</span>
+      <div>
+        <span class="create-option-title">Text Post</span>
+        <span class="create-option-copy">Open the composer for a quick text update.</span>
+      </div>
+    </a>
+    <a routerLink="/feed" [queryParams]="{ composer: 'upload' }" (click)="showCreateMenu = false" class="create-option">
+      <span class="create-option-icon">📸</span>
+      <div>
+        <span class="create-option-title">Upload Post</span>
+        <span class="create-option-copy">Start with a photo or video and publish it to your feed.</span>
+      </div>
+    </a>
+    <a routerLink="/feed" (click)="showCreateMenu = false" class="create-option">
+      <span class="create-option-icon">✨</span>
+      <div>
+        <span class="create-option-title">Create Post</span>
+        <span class="create-option-copy">Open the full post composer with both text and media options.</span>
+      </div>
+    </a>
+    <a routerLink="/reels" (click)="showCreateMenu = false" class="create-option">
+      <span class="create-option-icon">🎬</span>
+      <div>
+        <span class="create-option-title">New Reel</span>
+        <span class="create-option-copy">Record or upload a short video reel.</span>
+      </div>
+    </a>
+    <a routerLink="/stories" (click)="showCreateMenu = false" class="create-option">
+      <span class="create-option-icon">📷</span>
+      <div>
+        <span class="create-option-title">New Story</span>
+        <span class="create-option-copy">Share a moment that disappears in 24 hours.</span>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- ═══════════ TOAST NOTIFICATIONS ═══════════ -->
+<div class="toast-container" *ngIf="toastMessage">
+  <div class="toast" [ngClass]="toastType">
+    <span class="toast-icon">{{ toastType === 'success' ? '✓' : toastType === 'error' ? '✕' : 'ℹ' }}</span>
+    <span>{{ toastMessage }}</span>
+    <button class="toast-close" (click)="toastMessage = ''">×</button>
+  </div>
+</div>
+
+<!-- ═══════════ MAIN CONTENT ═══════════ -->
+<main class="main-content" [class.has-sidebar]="showSidebar()" [class.has-topnav]="isGuestPage() && !showSidebar()">
+  <router-outlet></router-outlet>
+</main>

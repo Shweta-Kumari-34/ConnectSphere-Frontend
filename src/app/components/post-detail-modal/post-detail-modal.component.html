@@ -1,0 +1,144 @@
+<div class="post-modal-overlay" *ngIf="post" (click)="close()">
+  <div class="post-modal" (click)="$event.stopPropagation()">
+    <button class="modal-close" type="button" (click)="close()">x</button>
+
+    <!-- Switches to single-column mode for text-only posts. -->
+    <div class="post-modal-content" [class.no-media]="!(post.mediaUrls.length)">
+      <!-- Render media stage only when media exists. -->
+      <div class="post-modal-image" *ngIf="post.mediaUrls.length">
+        <app-post-carousel
+          *ngIf="post.mediaUrls.length"
+          [mediaUrls]="post.mediaUrls"
+          ariaLabel="Post media"
+        ></app-post-carousel>
+      </div>
+
+      <!-- Right-side details/comment interaction panel. -->
+      <div class="post-modal-details">
+        <div class="post-modal-header">
+          <div class="author-block">
+            <img *ngIf="profilePicUrl" [src]="profilePicUrl" class="post-modal-avatar-img" alt="Profile photo" />
+            <div *ngIf="!profilePicUrl" class="post-modal-avatar">{{ (displayName || username || 'U').charAt(0).toUpperCase() }}</div>
+            <div>
+              <strong>
+                {{ username }}
+                <span class="inline-badge verified" *ngIf="isAuthorVerified">Verified</span>
+                <span class="inline-badge premium" *ngIf="isAuthorPremium">Premium</span>
+              </strong>
+              <div class="post-modal-handle">{{ displayName || username }}</div>
+            </div>
+          </div>
+
+          <button class="delete-post-btn" type="button" *ngIf="canDeletePost || isOwnPost" (click)="deletePost()" [disabled]="busy">
+            {{ busy ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+
+        <div class="post-modal-copy">
+          <h4 *ngIf="post.title">{{ post.title }}</h4>
+        </div>
+
+        <div class="post-footer-actions">
+          <div class="post-footer-left">
+            <button class="icon-action" type="button" [class.active]="likedPost" (click)="toggleLike()" aria-label="Like post">
+              <span class="icon-mark">{{ likedPost ? '♥' : '♡' }}</span>
+            </button>
+            <button class="icon-action" type="button" (click)="focusComments()" aria-label="Comment on post">
+              <span class="icon-mark">◌</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="post-like-count">{{ post.likeCount || 0 }} likes</div>
+
+        <div class="post-caption-block">
+          <div class="post-caption-line" *ngIf="post.content || username">
+            <strong>
+              {{ username }}
+              <span class="inline-badge verified" *ngIf="isAuthorVerified">Verified</span>
+              <span class="inline-badge premium" *ngIf="isAuthorPremium">Premium</span>
+            </strong>
+            <span>{{ visibleCaption }}</span>
+          </div>
+          <button class="view-comments-link" type="button" *ngIf="shouldShowMoreCaption" (click)="focusComments()">more</button>
+          <button class="view-comments-link" type="button" *ngIf="post.commentCount" (click)="focusComments()">
+            View all {{ post.commentCount }} comments
+          </button>
+          <div class="post-modal-time">{{ getTimeAgo(post.createdAt) }}</div>
+        </div>
+
+        <div class="comments-panel">
+          <div class="comment-input">
+            <input
+              #commentInput
+              type="text"
+              [(ngModel)]="newCommentText"
+              [disabled]="!isLoggedIn"
+              placeholder="Add a comment..."
+              (keyup.enter)="addComment()"
+            />
+            <button class="comment-submit" type="button" (click)="addComment()" [disabled]="!isLoggedIn || !newCommentText.trim()">Post</button>
+          </div>
+
+          <div class="login-hint" *ngIf="!isLoggedIn">
+            <button type="button" class="login-link-btn" (click)="loginRequested.emit()">Log in to like and comment</button>
+          </div>
+
+          <div class="comments-list" *ngIf="!loadingComments; else commentsLoading">
+            <div class="comment-thread" *ngFor="let comment of rootComments">
+              <div class="comment-item">
+                <div class="comment-avatar">{{ comment.userEmail.charAt(0).toUpperCase() }}</div>
+                <div class="comment-main">
+                  <div class="comment-topline">
+                    <strong>
+                      {{ comment.userEmail.split('@')[0] }}
+                      <span class="inline-badge verified" *ngIf="isVerifiedUser(comment.userEmail)">Verified</span>
+                      <span class="inline-badge premium" *ngIf="isPremiumUser(comment.userEmail)">Premium</span>
+                    </strong>
+                    <span>{{ getTimeAgo(comment.createdAt) }}</span>
+                  </div>
+                  <div class="comment-text">{{ comment.content }}</div>
+                  <div class="comment-actions">
+                    <button class="text-action" type="button" [class.active]="likedComments.has(comment.id)" (click)="toggleCommentLike(comment)">
+                      {{ likedComments.has(comment.id) ? 'Unlike' : 'Like' }} {{ comment.likeCount || 0 }}
+                    </button>
+                    <button class="text-action danger" type="button" *ngIf="isOwnComment(comment)" (click)="deleteComment(comment.id)">Delete</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="reply-list" *ngIf="hasReplies(comment.id)">
+                <div class="comment-item reply-item" *ngFor="let reply of getReplies(comment.id)">
+                  <div class="comment-avatar small">{{ reply.userEmail.charAt(0).toUpperCase() }}</div>
+                  <div class="comment-main">
+                    <div class="comment-topline">
+                      <strong>
+                        {{ reply.userEmail.split('@')[0] }}
+                        <span class="inline-badge verified" *ngIf="isVerifiedUser(reply.userEmail)">Verified</span>
+                        <span class="inline-badge premium" *ngIf="isPremiumUser(reply.userEmail)">Premium</span>
+                      </strong>
+                      <span>{{ getTimeAgo(reply.createdAt) }}</span>
+                    </div>
+                    <div class="comment-text">{{ reply.content }}</div>
+                    <div class="comment-actions">
+                      <button class="text-action" type="button" [class.active]="likedComments.has(reply.id)" (click)="toggleCommentLike(reply)">
+                        {{ likedComments.has(reply.id) ? 'Unlike' : 'Like' }} {{ reply.likeCount || 0 }}
+                      </button>
+                      <button class="text-action danger" type="button" *ngIf="isOwnComment(reply)" (click)="deleteComment(reply.id)">Delete</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="empty-comments" *ngIf="!comments.length">No comments yet.</div>
+          </div>
+
+          <ng-template #commentsLoading>
+            <div class="empty-comments">Loading comments...</div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,65 @@
+<div class="story-viewer-overlay" (click)="closeViewer()">
+  <div class="story-viewer-modal" (click)="$event.stopPropagation()">
+    <div class="story-progress-row">
+      <div class="story-progress-track" *ngFor="let story of visibleStories; let i = index">
+        <div class="story-progress-fill" [style.width.%]="getProgressPercent(i)"></div>
+      </div>
+    </div>
+
+    <div class="story-topbar" *ngIf="activeStory">
+      <div class="story-author">
+        <div class="story-author-avatar">{{ getStoryInitial(activeStory) }}</div>
+        <span>{{ getStoryDisplayName(activeStory) }}</span>
+        <span class="story-age">{{ getStoryAgeLabel(activeStory) }}</span>
+      </div>
+      <div class="story-actions">
+        <button
+          class="story-menu-btn"
+          type="button"
+          *ngIf="canDeleteActiveStory"
+          (click)="toggleMenu($event)"
+          aria-label="Story options"
+        >
+          ...
+        </button>
+        <div class="story-menu" *ngIf="showMenu" (click)="$event.stopPropagation()">
+          <button class="story-menu-item delete" type="button" (click)="requestDelete($event)">Delete story</button>
+        </div>
+        <button class="story-close-btn" type="button" (click)="closeViewer()">x</button>
+      </div>
+    </div>
+
+    <div class="story-media-stage" *ngIf="activeStory">
+      <img *ngIf="activeStory.mediaType !== 'VIDEO'" [src]="getActiveStoryMediaUrl()" alt="Story media" />
+      <video *ngIf="activeStory.mediaType === 'VIDEO'" [src]="getActiveStoryMediaUrl()" autoplay muted playsinline></video>
+    </div>
+
+    <div class="story-caption" *ngIf="activeStory?.caption">{{ activeStory?.caption }}</div>
+
+    <button class="tap-zone left" type="button" (click)="previousStory()" aria-label="Previous story"></button>
+    <button class="tap-zone right" type="button" (click)="nextStory()" aria-label="Next story"></button>
+
+    <div class="story-footer" *ngIf="activeStory" (click)="$event.stopPropagation()">
+      <div class="story-input-wrapper">
+        <input 
+          type="text" 
+          placeholder="Send message..." 
+          [(ngModel)]="storyCommentText"
+          (focus)="pauseTimer()"
+          (blur)="resumeTimer()"
+          (keyup.enter)="sendStoryComment()"
+        />
+        <button class="story-send-btn" [disabled]="!storyCommentText.trim()" (click)="sendStoryComment()">Send</button>
+      </div>
+      <div class="story-quick-reactions">
+        <button
+          *ngFor="let emoji of ['❤️', '😂', '😮', '😢', '🔥', '👏', '🎉']"
+          type="button"
+          (click)="$event.stopPropagation(); sendStoryReaction(emoji)"
+        >
+          {{ emoji }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

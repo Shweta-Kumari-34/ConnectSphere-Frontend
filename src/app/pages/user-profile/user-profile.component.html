@@ -1,0 +1,160 @@
+<div class="user-profile-page">
+  <section class="profile-shell">
+    <div class="profile-header">
+      <div class="profile-avatar-section">
+        <button
+          class="avatar-ring"
+          type="button"
+          [class.has-story]="hasStories"
+          [class.story-clickable]="hasStories"
+          (click)="openProfileStories()"
+          [disabled]="!hasStories"
+          [attr.aria-label]="hasStories ? 'Open stories' : null"
+        >
+          <img *ngIf="profilePicUrl" [src]="profilePicUrl" class="avatar-img" alt="Profile photo" />
+          <div *ngIf="!profilePicUrl" class="avatar-placeholder">{{ getInitial() }}</div>
+        </button>
+      </div>
+
+      <div class="profile-info-section">
+        <div class="username-row">
+          <div class="identity-block">
+            <h1 id="profile-username">{{ username }}</h1>
+            <span class="verified-badge" *ngIf="isVerified">Verified</span>
+            <span class="verified-badge premium" *ngIf="isPremiumMember">Premium</span>
+          </div>
+
+          <div class="action-buttons">
+            <button
+              class="btn-follow"
+              *ngIf="!isOwnProfile && isLoggedIn"
+              [class.following]="isFollowing"
+              [disabled]="followBusy"
+              (click)="toggleFollow()"
+            >
+              {{ followBusy ? 'Updating...' : (isFollowing ? 'Following' : 'Follow') }}
+            </button>
+            <button class="btn-follow" *ngIf="!isOwnProfile && !isLoggedIn" (click)="goToLogin()">Follow</button>
+            <a class="btn-edit" routerLink="/profile" *ngIf="isOwnProfile">Edit profile</a>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <strong>{{ formatCount(postCount) }}</strong>
+            <span>posts</span>
+          </div>
+          <div class="stat-card">
+            <strong>{{ formatCount(followerCount) }}</strong>
+            <span>followers</span>
+          </div>
+          <div class="stat-card">
+            <strong>{{ formatCount(followingCount) }}</strong>
+            <span>following</span>
+          </div>
+        </div>
+
+        <div class="bio-card">
+          <div class="bio-name">{{ getDisplayName() }}</div>
+          <div class="bio-text" *ngIf="bio">{{ bio }}</div>
+          <div class="bio-text muted" *ngIf="!bio">Sharing updates and connecting on ConnectSphere.</div>
+          <div class="bio-meta">
+            <span class="meta-badge" *ngIf="memberSince">Joined {{ memberSince }}</span>
+            <span class="meta-badge">@{{ username }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="guest-cta" *ngIf="!isLoggedIn">
+      <p>Sign in to follow {{ username }} and keep up with their latest posts.</p>
+      <div class="guest-cta-buttons">
+        <button class="btn-follow" (click)="goToLogin()">Log In</button>
+        <button class="btn-secondary" (click)="goToLogin()">Create account</button>
+      </div>
+    </div>
+
+    <div class="profile-tabs">
+      <button [class.active]="activeTab === 'posts'" (click)="activeTab = 'posts'">Posts</button>
+      <button [class.active]="activeTab === 'reels'" (click)="activeTab = 'reels'">Reels</button>
+      <button [class.active]="activeTab === 'tagged'" (click)="activeTab = 'tagged'">Tagged</button>
+    </div>
+
+    <div class="posts-grid" *ngIf="activeTab === 'posts' && !loading">
+      <div class="grid-item" *ngFor="let post of posts" (click)="openPost(post)">
+        <img *ngIf="getPostPreview(post); else postFallback" [src]="getPostPreview(post)" class="grid-photo" alt="" />
+        <ng-template #postFallback>
+          <div class="grid-thumb">{{ getPostLetter(post) }}</div>
+        </ng-template>
+        <div class="grid-count-badge" *ngIf="(post.mediaUrls || []).length > 1">{{ post.mediaUrls.length }}</div>
+        <div class="grid-overlay">
+          <span>{{ post.likeCount || 0 }} likes</span>
+          <span>{{ post.commentCount || 0 }} comments</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="activeTab === 'posts' && !loading && posts.length === 0">
+      <div class="empty-camera">CS</div>
+      <h3 *ngIf="isOwnProfile">Share Photos</h3>
+      <h3 *ngIf="!isOwnProfile">No Posts Yet</h3>
+      <p *ngIf="isOwnProfile">When you share photos, they will appear on your profile.</p>
+      <p *ngIf="!isOwnProfile">When {{ username }} shares photos, they will appear here.</p>
+      <a routerLink="/posts" class="share-link" *ngIf="isOwnProfile">Share your first photo</a>
+    </div>
+
+    <div class="post-grid" *ngIf="activeTab === 'reels'">
+      <div class="grid-item reel-grid-item" *ngFor="let reel of userReels">
+        <div class="grid-media">
+          <video [src]="reel.mediaUrl" class="grid-photo reel-preview" muted playsinline></video>
+          <div class="reel-play-icon">▶</div>
+          <div class="reel-visibility-badge" *ngIf="reel.visibility">{{ reel.visibility }}</div>
+        </div>
+      </div>
+
+      <div class="grid-empty" *ngIf="userReels.length === 0 && !loading">
+        <div class="empty-icon">🎥</div>
+        <h3>No Reels Yet</h3>
+        <p>{{ isOwnProfile ? 'You haven\'t' : username + ' hasn\'t' }} posted any reels.</p>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="activeTab === 'tagged' && !loading">
+      <div class="empty-camera">TG</div>
+      <h3>No Tagged Posts</h3>
+      <p>Tagged content will show up here when available.</p>
+    </div>
+
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner"></div>
+      <span>Loading profile...</span>
+    </div>
+  </section>
+
+  <app-post-detail-modal
+    *ngIf="selectedPost"
+    [post]="selectedPost"
+    [username]="username"
+    [displayName]="getDisplayName()"
+    [profilePicUrl]="profilePicUrl"
+    [currentUserEmail]="currentUserEmail"
+    [isLoggedIn]="isLoggedIn"
+    [canDeletePost]="isOwnProfile"
+    [isAuthorVerified]="isVerified"
+    [isAuthorPremium]="isPremiumMember"
+    (closed)="closePost()"
+    (postDeleted)="handlePostDeleted($event)"
+    (loginRequested)="goToLogin()"
+  ></app-post-detail-modal>
+
+  <app-story-viewer
+    *ngIf="viewerStories.length > 0"
+    [stories]="viewerStories"
+    [currentIndex]="viewerCurrentIndex"
+    [currentUserEmail]="isOwnProfile ? userEmail : ''"
+    [allowDelete]="isOwnProfile"
+    (storyChanged)="markStoryViewed($event)"
+    (deleteRequested)="deleteStoryFromViewer($event)"
+    (closed)="closeStoryViewer()"
+  ></app-story-viewer>
+</div>

@@ -13,11 +13,59 @@
   "routes": [
     {
       "src": "/auth/(.*)",
-      "dest": "https://connectsphere-api.your-backend.com/auth/$1"
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/auth/$1"
     },
     {
       "src": "/posts/(.*)",
-      "dest": "https://connectsphere-api.your-backend.com/posts/$1"
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/posts/$1"
+    },
+    {
+      "src": "/reels/(.*)",
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/reels/$1"
+    },
+    {
+      "src": "/comments/(.*)",
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/comments/$1"
+    },
+    {
+      "src": "/likes/(.*)",
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/likes/$1"
+    },
+    {
+      "src": "/follows/(.*)",
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/follows/$1"
+    },
+    {
+      "src": "/notifications/(.*)",
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/notifications/$1"
+    },
+    {
+      "src": "/media/(.*)",
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/media/$1"
+    },
+    {
+      "src": "/uploads/(.*)",
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/uploads/$1"
+    },
+    {
+      "src": "/search/(.*)",
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/search/$1"
+    },
+    {
+      "src": "/payments/(.*)",
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/payments/$1"
+    },
+    {
+      "src": "/reports/(.*)",
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/reports/$1"
+    },
+    {
+      "src": "/oauth2/(.*)",
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/oauth2/$1"
+    },
+    {
+      "src": "/login/oauth2/(.*)",
+      "dest": "https://angles-sizzle-sharpie.ngrok-free.dev/login/oauth2/$1"
     },
     {
       "src": "/(index\\.html|.*\\.(js|css|png|jpg|jpeg|svg|ico|json|woff|woff2|ttf))$",

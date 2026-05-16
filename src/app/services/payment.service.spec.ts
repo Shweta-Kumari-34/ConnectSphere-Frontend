@@ -17,7 +17,8 @@ describe('PaymentService', () => {
   });
 
   afterEach(() => {
-    httpMock.verify();
+    httpMock?.verify();
+    TestBed.resetTestingModule();
   });
 
   it('should be created', () => {
@@ -95,6 +96,7 @@ describe('PaymentService', () => {
       });
 
       const req = httpMock.expectOne('/payments/subscriptions/10/cancel');
+      expect(req.request.method).toBe('PUT');
       req.flush({ id: 10, status: 'CANCELLED' });
     });
   });

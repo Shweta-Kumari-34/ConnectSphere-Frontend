@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { AuthService, RegisterRequest, LoginRequest } from './auth.service';
+import { environment } from '../../environments/environment';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 describe('AuthService', () => {
@@ -18,8 +19,9 @@ describe('AuthService', () => {
   });
 
   afterEach(() => {
-    httpMock.verify();
+    httpMock?.verify();
     localStorage.clear();
+    TestBed.resetTestingModule();
   });
 
   it('should be created', () => {
@@ -40,7 +42,7 @@ describe('AuthService', () => {
         expect(res.message).toBe('Registration successful');
       });
 
-      const req = httpMock.expectOne('/auth/register');
+      const req = httpMock.expectOne(`${environment.oauthBaseUrl}/auth/register`);
       expect(req.request.method).toBe('POST');
       req.flush('Registration successful', { status: 200, statusText: 'OK' });
     });
@@ -66,7 +68,7 @@ describe('AuthService', () => {
         expect(localStorage.getItem('token')).toBe('mock-jwt-token');
       });
 
-      const req = httpMock.expectOne('/auth/register');
+      const req = httpMock.expectOne(`${environment.oauthBaseUrl}/auth/register`);
       req.flush(mockResponse);
     });
   });
@@ -87,7 +89,7 @@ describe('AuthService', () => {
         expect(service.getRole()).toBe('ADMIN');
       });
 
-      const req = httpMock.expectOne('/auth/login');
+      const req = httpMock.expectOne(`${environment.oauthBaseUrl}/auth/login`);
       req.flush(mockResponse);
     });
 
@@ -98,7 +100,7 @@ describe('AuthService', () => {
         }
       });
 
-      const req = httpMock.expectOne('/auth/login');
+      const req = httpMock.expectOne(`${environment.oauthBaseUrl}/auth/login`);
       req.flush('Invalid credentials', { status: 401, statusText: 'Unauthorized' });
     });
   });
@@ -170,7 +172,7 @@ describe('AuthService', () => {
       service.verifyRegister('test@email.com', '123456').subscribe(res => {
         expect(res.token).toBe('verify-token');
       });
-      const req = httpMock.expectOne('/auth/register/verify');
+      const req = httpMock.expectOne(`${environment.oauthBaseUrl}/auth/register/verify`);
       req.flush(JSON.stringify({ token: 'verify-token' }));
     });
   });

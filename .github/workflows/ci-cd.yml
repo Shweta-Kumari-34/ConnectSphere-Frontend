@@ -1,0 +1,76 @@
+# ========================================================
+# GitHub Actions CI/CD Pipeline (Frontend)
+# ========================================================
+
+name: ConnectSphere Frontend CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-and-analyze:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Unit Tests
+        run: npm test -- --watch=false --browsers=ChromeHeadless
+
+      - name: SonarQube Analysis
+        run: npx sonar-scanner
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test-and-analyze
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            WORKSPACE="~/connectsphere"
+            mkdir -p $WORKSPACE
+            cd $WORKSPACE
+
+            # Sync Backend Repository (required for orchestration)
+            if [ ! -d "ConnectSphere-Backend" ]; then
+              git clone https://${{ secrets.GH_PAT }}@github.com/Shweta-Kumari-34/ConnectSphere-Backend.git
+            else
+              cd ConnectSphere-Backend && git pull origin main && cd ..
+            fi
+
+            # Sync Frontend Repository
+            if [ ! -d "ConnectSphere-Frontend" ]; then
+              git clone https://${{ secrets.GH_PAT }}@github.com/Shweta-Kumari-34/ConnectSphere-Frontend.git
+            else
+              cd ConnectSphere-Frontend && git pull origin main && cd ..
+            fi
+
+            # Orchestrate with Docker Compose
+            cd ConnectSphere-Backend
+            docker compose up -d --build
+            echo "Deployment to Production Successful."

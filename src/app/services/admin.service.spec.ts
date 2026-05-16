@@ -26,7 +26,8 @@ describe('AdminService', () => {
   });
 
   afterEach(() => {
-    httpMock.verify();
+    httpMock?.verify();
+    TestBed.resetTestingModule();
   });
 
   it('should be created', () => {
@@ -70,12 +71,16 @@ describe('AdminService', () => {
 
     it('should reactivate user', () => {
       service.reactivateUser(1).subscribe();
-      httpMock.expectOne('/auth/users/1/reactivate').flush('OK');
+      const req = httpMock.expectOne('/auth/users/1/reactivate');
+      expect(req.request.method).toBe('PUT');
+      req.flush('OK');
     });
 
     it('should delete user', () => {
       service.deleteUser(1).subscribe();
-      httpMock.expectOne('/auth/users/1').flush('OK');
+      const req = httpMock.expectOne('/auth/users/1');
+      expect(req.request.method).toBe('DELETE');
+      req.flush('OK');
     });
   });
 
@@ -85,6 +90,7 @@ describe('AdminService', () => {
         expect(res).toBe('Deleted');
       });
       const req = httpMock.expectOne('/posts/100');
+      expect(req.request.method).toBe('DELETE');
       req.flush('Deleted');
     });
 
@@ -115,6 +121,7 @@ describe('AdminService', () => {
     it('should resolve report', () => {
       service.resolveReport(1, 'Fixed').subscribe();
       const req = httpMock.expectOne('/reports/1/resolve');
+      expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual({ adminNote: 'Fixed' });
       req.flush({});
     });

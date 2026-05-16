@@ -16,6 +16,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const headers: Record<string, string> = {};
   const token = isExpiredJwt(storedToken) ? null : storedToken;
   const tokenEmail = extractEmailFromJwt(token);
+  const isApiRequest = /^\/(auth|posts|reels|comments|likes|follows|notifications|media|uploads|search|payments|reports|oauth2|login\/oauth2)(\/|$)/i.test(req.url)
+    || /^https:\/\/angles-sizzle-sharpie\.ngrok-free\.dev\//i.test(req.url);
+
+  if (isApiRequest) {
+    headers['ngrok-skip-browser-warning'] = 'true';
+  }
 
   if (!token && storedToken) {
     localStorage.removeItem('token');
